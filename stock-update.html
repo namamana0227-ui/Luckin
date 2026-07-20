@@ -22,17 +22,12 @@
   <main class="page">
     <section class="card" id="formCard">
       <h1>Update Luckin stock</h1>
-      <p>Receive one box code with all products inside it, or record where a box is used.</p>
+      <p>Receive one box code with all products inside it.</p>
       <div class="notice">For a received box, enter the box code once. Add every product inside that box below.</div>
       <form id="form">
-        <div class="field"><label for="activity">Activity</label><select id="activity"><option value="Receive">Receive new box</option><option value="Use">Use box for branch</option></select></div>
         <div id="receiveFields">
           <div class="field"><label for="code">Box code</label><input id="code" placeholder="Example: S01-19"></div>
           <div class="field"><label>Products inside this box</label><div class="items" id="items"></div><button class="add" type="button" id="addItem">+ Add another product</button></div>
-        </div>
-        <div id="useFields" class="hidden">
-          <div class="field"><label for="availableBox">Available box code</label><select id="availableBox"></select></div>
-          <div class="field"><label for="branch">Used for Luckin branch</label><input id="branch" placeholder="Example: Luckin KLCC"></div>
         </div>
         <div class="field"><label for="notes">Notes</label><textarea id="notes" placeholder="Optional delivery or installation notes."></textarea></div>
         <button class="save" id="submit">Save stock update</button>
@@ -44,7 +39,6 @@
   <script>
     const database=supabase.createClient('https://pthvibwnyvlszmprfdit.supabase.co','sb_publishable_1UBB53SrLHpMhlrquuIOkw_4WtXsdE6');
     const products=['吊挂','侧标','非标','背光字','灯箱','Luckin Coffee立体站式','Photo Frame','字体 1(SILVER)','字体 2(SILVER)','字体 3(SILVER)','字体 4(SILVER)','字体 5(SILVER)','字体 6(SILVER)','字体 7(SILVER)','字体 8(SILVER)','字体 9(SILVER)','PICK UP(SILVER)','NO. MY (SILVER)','字体 1(COOPER)','字体 2(COOPER)','字体 3(COOPER)','字体 4(COOPER)','字体 5(COOPER)','字体 6(COOPER)','字体 7(COOPER)','字体 8(COOPER)','字体 9(COOPER)','PICK UP(COOPER)','NO. MY (COOPER)','蓝底白鹿-正面鹿头','双面火箱古铜色','fabric lightbox','横板背架-非标Luckin Coffee'];
-    let boxes=[];
     const productOptions='<option value="">Select product</option>'+products.map(product=>'<option>'+product+'</option>').join('')+'<option value="__other__">Other — type a new product</option>';
     function addItem(){
       const row=document.createElement('div');
@@ -54,23 +48,6 @@
       row.querySelector('.remove').onclick=()=>{if(document.querySelectorAll('.item').length>1)row.remove();};
       document.getElementById('items').appendChild(row);
     }
-    function updateForm(){
-      const receiving=document.getElementById('activity').value==='Receive';
-      document.getElementById('receiveFields').classList.toggle('hidden',!receiving);
-      document.getElementById('useFields').classList.toggle('hidden',receiving);
-      if(!receiving)renderAvailable();
-    }
-    function renderAvailable(){
-      const select=document.getElementById('availableBox');
-      const available=boxes.filter(box=>box.status==='Available');
-      select.innerHTML=available.length?available.map(box=>'<option value="'+box.id+'">'+box.code+' — '+box.items.map(item=>item.product_name).join(', ')+'</option>').join(''):'<option value="">No available boxes</option>';
-    }
-    async function loadBoxes(){
-      const {data,error}=await database.from('luckin_boxes').select('id,box_code,status,luckin_box_items(product_name)').order('box_code');
-      if(error){alert('Cannot load stock: '+error.message);return;}
-      boxes=data.map(row=>({id:row.id,code:row.box_code,status:row.status,items:row.luckin_box_items||[]}));
-      renderAvailable();
-    }
     function getItems(){
       return [...document.querySelectorAll('.item')].map(row=>({
         product_name:row.querySelector('.product').value==='__other__'?row.querySelector('.other-product').value.trim():row.querySelector('.product').value,
@@ -78,32 +55,25 @@
         quantity:Number(row.querySelector('.quantity').value)
       })).filter(item=>item.product_name||item.size||item.quantity!==1);
     }
-    document.getElementById('activity').onchange=updateForm;
     document.getElementById('addItem').onclick=addItem;
     document.getElementById('form').onsubmit=async event=>{
       event.preventDefault();
       const button=document.getElementById('submit');button.disabled=true;button.textContent='Saving...';
       let error;
-      if(document.getElementById('activity').value==='Receive'){
-        const boxCode=document.getElementById('code').value.trim();
-        const notes=document.getElementById('notes').value.trim();
-        const items=getItems();
-        if(!boxCode||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
-          alert('Enter the box code, then complete Product name, Size, and Qty for every product.');
-          button.disabled=false;button.textContent='Save stock update';return;
-        }
-        const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes}).select('id').single();
-        error=boxError;
-        if(!error)({error}=await database.from('luckin_box_items').insert(items.map(item=>({...item,box_id:box.id}))));
-      }else{
-        const id=Number(document.getElementById('availableBox').value),branch=document.getElementById('branch').value.trim();
-        if(!id||!branch){alert('Choose an available box and enter the branch name.');button.disabled=false;button.textContent='Save stock update';return;}
-        ({error}=await database.from('luckin_boxes').update({status:'Used',branch,used_at:new Date().toISOString(),notes:document.getElementById('notes').value.trim()}).eq('id',id));
+      const boxCode=document.getElementById('code').value.trim();
+      const notes=document.getElementById('notes').value.trim();
+      const items=getItems();
+      if(!boxCode||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
+        alert('Enter the box code, then complete Product name, Size, and Qty for every product.');
+        button.disabled=false;button.textContent='Save stock update';return;
       }
+      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes}).select('id').single();
+      error=boxError;
+      if(!error)({error}=await database.from('luckin_box_items').insert(items.map(item=>({...item,box_id:box.id}))));
       if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return;}
       document.getElementById('formCard').classList.add('hidden');document.getElementById('success').classList.remove('hidden');
     };
-    addItem();updateForm();loadBoxes();
+    addItem();
   </script>
 </body>
 </html>
