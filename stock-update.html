@@ -1,105 +1,108 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Luckin Stock Update</title><style>
-:root{--orange:#b84a16;--deep:#54200d;--paper:#fff4eb;--line:#edc7af;--muted:#815d4c}*{box-sizing:border-box}body{margin:0;background:#f3c8ab;color:var(--deep);font-family:Arial,sans-serif}.bar{background:var(--orange);color:#fff;padding:18px max(22px,calc((100% - 680px)/2));font-size:19px;font-weight:800}.page{width:min(620px,calc(100% - 32px));margin:35px auto}.card{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:24px}h1{font-size:26px;margin:0 0 7px}p{color:var(--muted);line-height:1.45}.notice{padding:11px 12px;background:#ffeadc;border-radius:7px;font-size:12px;color:#7d391d;margin:18px 0}.field{display:grid;gap:6px;margin-top:15px}label{font-weight:700;font-size:13px}input,select,textarea{border:1px solid #dba886;border-radius:7px;padding:11px;background:#fff;font:inherit;color:var(--deep)}textarea{min-height:70px;resize:vertical}button{width:100%;margin-top:22px;border:0;border-radius:7px;background:var(--orange);color:#fff;padding:12px;font-weight:800;font-size:14px;cursor:pointer}.hidden{display:none}.success{text-align:center;padding:25px}.success h2{margin:0 0 7px}
-</style></head><body><header class="bar">LUCKIN · Stock Update</header><main class="page"><section class="card" id="formCard"><h1>Update Luckin stock</h1><p>Receive a coded box, or record where an available box is used.</p><div class="notice">Record each box by its unique box code, product name, and size.</div><form id="form"><div class="field"><label for="activity">Activity</label><select id="activity"><option value="Receive">Receive new box</option><option value="Use">Use box for branch</option></select></div><div id="receiveFields"><div class="field"><label for="code">Box code</label><input id="code" placeholder="Example: S02-12"></div><div class="field"><label for="product">Product name</label><select id="product" required><option value="">Select product</option><option>吊挂</option><option>侧标</option><option>非标</option><option>背光字</option><option>灯箱</option><option>Luckin Coffee立体站式</option><option>Photo Frame</option><option>字体 1(SILVER)</option><option>字体 2(SILVER)</option><option>字体 3(SILVER)</option><option>字体 4(SILVER)</option><option>字体 5(SILVER)</option><option>字体 6(SILVER)</option><option>字体 7(SILVER)</option><option>字体 8(SILVER)</option><option>字体 9(SILVER)</option><option>PICK UP(SILVER)</option><option>NO. MY (SILVER)</option><option>字体 1(COOPER)</option><option>字体 2(COOPER)</option><option>字体 3(COOPER)</option><option>字体 4(COOPER)</option><option>字体 5(COOPER)</option><option>字体 6(COOPER)</option><option>字体 7(COOPER)</option><option>字体 8(COOPER)</option><option>字体 9(COOPER)</option><option>PICK UP(COOPER)</option><option>NO. MY (COOPER)</option><option>蓝底白鹿-正面鹿头</option><option>双面火箱古铜色</option><option>fabric lightbox</option><option>横板背架-非标Luckin Coffee</option></select></div><div class="field"><label for="size">Size</label><input id="size" placeholder="Example: 600mm"></div></div><div id="useFields" class="hidden"><div class="field"><label for="availableBox">Available box code</label><select id="availableBox"></select></div><div class="field"><label for="branch">Used for Luckin branch</label><input id="branch" placeholder="Example: Luckin KLCC"></div></div><div class="field"><label for="notes">Notes</label><textarea id="notes" placeholder="Optional delivery or installation notes."></textarea></div><button id="submit">Save stock update</button></form></section><section class="card success hidden" id="success"><h2>✓ Stock updated</h2><p>The box record has been saved.</p><button onclick="location.reload()">Add another update</button></section></main><script>
-let boxes=JSON.parse(localStorage.getItem('luckin-box-register')||'null')||[];const dateNow=()=>new Date().toLocaleString('en-MY');const activity=document.getElementById('activity');function updateForm(){const receive=activity.value==='Receive';document.getElementById('receiveFields').classList.toggle('hidden',!receive);document.getElementById('useFields').classList.toggle('hidden',receive);if(!receive)renderAvailable()}function renderAvailable(){const select=document.getElementById('availableBox');const available=boxes.filter(box=>box.status==='Available');select.innerHTML=available.length?available.map(box=>`<option value="${box.id}">${box.code} — ${box.product}${box.size?' · '+box.size:''}</option>`).join(''):'<option value="">No available boxes</option>'}function fillBoxDetails(){}document.getElementById('form').onsubmit=event=>{event.preventDefault();if(activity.value==='Receive'){const code=document.getElementById('code').value.trim(),product=document.getElementById('product').value.trim(),size=document.getElementById('size').value.trim();if(!code||!product||!size){alert('Enter Box Code, Product Name, and Size.');return}if(boxes.some(box=>box.code.toLowerCase()===code.toLowerCase())){alert('This box code already exists.');return}boxes.push({id:Date.now(),code,product,size,receivedAt:dateNow(),status:'Available',branch:'',usedAt:'',notes:document.getElementById('notes').value.trim()})}else{const id=Number(document.getElementById('availableBox').value),branch=document.getElementById('branch').value.trim();if(!id||!branch){alert('Choose an available box and enter the branch name.');return}boxes=boxes.map(box=>box.id===id?{...box,status:'Used',branch,usedAt:dateNow(),notes:document.getElementById('notes').value.trim()||box.notes}:box)}localStorage.setItem('luckin-box-register',JSON.stringify(boxes));document.getElementById('formCard').classList.add('hidden');document.getElementById('success').classList.remove('hidden')};updateForm();
-</script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
-const stockDatabase=supabase.createClient('https://pthvibwnyvlszmprfdit.supabase.co','sb_publishable_1UBB53SrLHpMhlrquuIOkw_4WtXsdE6');
-const stockRow=row=>({id:row.id,code:row.box_code,product:row.product_name,size:row.size,receivedAt:new Date(row.received_at).toLocaleString('en-MY'),status:row.status,branch:row.branch||'',usedAt:row.used_at?new Date(row.used_at).toLocaleString('en-MY'):'',notes:row.notes||''});
-async function loadSharedStock(){const {data,error}=await stockDatabase.from('luckin_boxes').select('*').order('received_at');if(error){alert('Cannot load Luckin stock: '+error.message);return}boxes=data.map(stockRow);updateForm()}
-document.getElementById('form').onsubmit=async event=>{event.preventDefault();const button=document.getElementById('submit');button.disabled=true;button.textContent='Saving...';let error;if(activity.value==='Receive'){const code=document.getElementById('code').value.trim(),product=document.getElementById('product').value.trim(),size=document.getElementById('size').value.trim();if(!code||!product||!size){alert('Enter Box Code, Product Name, and Size.');button.disabled=false;button.textContent='Save stock update';return}({error}=await stockDatabase.from('luckin_boxes').insert({box_code:code,product_name:product,size,notes:document.getElementById('notes').value.trim()}))}else{const id=Number(document.getElementById('availableBox').value),branch=document.getElementById('branch').value.trim();if(!id||!branch){alert('Choose an available box and enter the branch name.');button.disabled=false;button.textContent='Save stock update';return}({error}=await stockDatabase.from('luckin_boxes').update({status:'Used',branch,used_at:new Date().toISOString(),notes:document.getElementById('notes').value.trim()}).eq('id',id))}if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return}document.getElementById('formCard').classList.add('hidden');document.getElementById('success').classList.remove('hidden')};
-loadSharedStock();
-  // Faster multi-box receiving: one product and size can be used for many box codes.
-  (() => {
-    const originalCodeField = document.getElementById('code')?.closest('.field');
-    if (!originalCodeField) return;
-
-    originalCodeField.innerHTML = `
-      <label for="boxCodes">Box codes</label>
-      <textarea id="boxCodes" placeholder="Type or paste one box code per line&#10;Example:&#10;S02-12&#10;S02-13&#10;S02-14"></textarea>
-      <div class="box-help" id="boxCount">0 box codes entered</div>
-    `;
-
-    const extraStyle = document.createElement('style');
-    extraStyle.textContent = `
-      #boxCodes { min-height:125px; }
-      .box-help { margin-top:7px; color:var(--muted); font-size:12px; }
-      .quick-tip { margin:10px 0 0; padding:10px 11px; background:#fff0e5; border-radius:7px; font-size:12px; color:#7d391d; }
-    `;
-    document.head.appendChild(extraStyle);
-    document.querySelector('.notice').innerHTML = 'For received stock: enter all box codes together, one code per line. Product, size, and notes will be saved for every box.';
-
-    const codesFromField = () => [...new Set(
-      document.getElementById('boxCodes').value
-        .split(/[\n,]/)
-        .map(code => code.trim())
-        .filter(Boolean)
-    )];
-    const updateCount = () => {
-      const count = codesFromField().length;
-      document.getElementById('boxCount').textContent = count + (count === 1 ? ' box code entered' : ' box codes entered');
-    };
-    document.getElementById('boxCodes').addEventListener('input', updateCount);
-
-    document.getElementById('form').onsubmit = async event => {
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Luckin Stock Update</title>
+  <style>
+    :root{--orange:#b84a16;--deep:#54200d;--paper:#fff4eb;--line:#edc7af;--muted:#815d4c}
+    *{box-sizing:border-box}body{margin:0;background:#f3c8ab;color:var(--deep);font-family:Arial,sans-serif}
+    .bar{background:var(--orange);color:#fff;padding:18px max(22px,calc((100% - 720px)/2));font-size:19px;font-weight:800}
+    .page{width:min(680px,calc(100% - 28px));margin:28px auto}.card{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:24px}
+    h1{font-size:26px;margin:0 0 7px}p{color:var(--muted);line-height:1.45}.notice{padding:11px 12px;background:#ffeadc;border-radius:7px;font-size:12px;color:#7d391d;margin:18px 0}
+    .field{display:grid;gap:6px;margin-top:15px}label{font-weight:700;font-size:13px}input,select,textarea{width:100%;border:1px solid #dba886;border-radius:7px;padding:11px;background:#fff;font:inherit;color:var(--deep)}
+    textarea{min-height:70px;resize:vertical}.items{display:grid;gap:10px;margin-top:14px}.item{display:grid;grid-template-columns:1fr 145px 88px 38px;gap:8px;align-items:end;background:#fff9f4;border:1px solid #efd2bf;border-radius:9px;padding:11px}
+    .item label{font-size:11px}.remove{width:38px;height:40px;margin:0;border:0;border-radius:7px;background:#f8ddd1;color:#8a3515;font-size:18px;cursor:pointer}.add{width:auto;margin-top:11px;border:1px dashed #c86b3d;border-radius:7px;background:#fff7f1;color:#8a3515;padding:10px 12px;font-weight:800;cursor:pointer}
+    .save{width:100%;margin-top:22px;border:0;border-radius:7px;background:var(--orange);color:#fff;padding:12px;font-weight:800;font-size:14px;cursor:pointer}.hidden{display:none}.success{text-align:center;padding:25px}.success h2{margin:0 0 7px}
+    @media(max-width:560px){.card{padding:18px}.item{grid-template-columns:1fr 1fr 38px}.item .product-field{grid-column:1/-1}.item .quantity-field{grid-column:1/3}.item .remove{grid-column:3}}
+  </style>
+</head>
+<body>
+  <header class="bar">LUCKIN · Stock Update</header>
+  <main class="page">
+    <section class="card" id="formCard">
+      <h1>Update Luckin stock</h1>
+      <p>Receive one box code with all products inside it, or record where a box is used.</p>
+      <div class="notice">For a received box, enter the box code once. Add every product inside that box below.</div>
+      <form id="form">
+        <div class="field"><label for="activity">Activity</label><select id="activity"><option value="Receive">Receive new box</option><option value="Use">Use box for branch</option></select></div>
+        <div id="receiveFields">
+          <div class="field"><label for="code">Box code</label><input id="code" placeholder="Example: S01-19"></div>
+          <div class="field"><label>Products inside this box</label><div class="items" id="items"></div><button class="add" type="button" id="addItem">+ Add another product</button></div>
+        </div>
+        <div id="useFields" class="hidden">
+          <div class="field"><label for="availableBox">Available box code</label><select id="availableBox"></select></div>
+          <div class="field"><label for="branch">Used for Luckin branch</label><input id="branch" placeholder="Example: Luckin KLCC"></div>
+        </div>
+        <div class="field"><label for="notes">Notes</label><textarea id="notes" placeholder="Optional delivery or installation notes."></textarea></div>
+        <button class="save" id="submit">Save stock update</button>
+      </form>
+    </section>
+    <section class="card success hidden" id="success"><h2>✓ Stock updated</h2><p>The box record has been saved.</p><button class="save" onclick="location.reload()">Add another update</button></section>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const database=supabase.createClient('https://pthvibwnyvlszmprfdit.supabase.co','sb_publishable_1UBB53SrLHpMhlrquuIOkw_4WtXsdE6');
+    const products=['吊挂','侧标','非标','背光字','灯箱','Luckin Coffee立体站式','Photo Frame','字体 1(SILVER)','字体 2(SILVER)','字体 3(SILVER)','字体 4(SILVER)','字体 5(SILVER)','字体 6(SILVER)','字体 7(SILVER)','字体 8(SILVER)','字体 9(SILVER)','PICK UP(SILVER)','NO. MY (SILVER)','字体 1(COOPER)','字体 2(COOPER)','字体 3(COOPER)','字体 4(COOPER)','字体 5(COOPER)','字体 6(COOPER)','字体 7(COOPER)','字体 8(COOPER)','字体 9(COOPER)','PICK UP(COOPER)','NO. MY (COOPER)','蓝底白鹿-正面鹿头','双面火箱古铜色','fabric lightbox','横板背架-非标Luckin Coffee'];
+    let boxes=[];
+    const productOptions='<option value="">Select product</option>'+products.map(product=>'<option>'+product+'</option>').join('');
+    function addItem(){
+      const row=document.createElement('div');
+      row.className='item';
+      row.innerHTML='<div class="product-field"><label>Product name</label><select class="product">'+productOptions+'</select></div><div><label>Size</label><input class="size" placeholder="Example: 600mm"></div><div class="quantity-field"><label>Qty</label><input class="quantity" type="number" min="1" value="1"></div><button type="button" class="remove" title="Remove product">×</button>';
+      row.querySelector('.remove').onclick=()=>{if(document.querySelectorAll('.item').length>1)row.remove();};
+      document.getElementById('items').appendChild(row);
+    }
+    function updateForm(){
+      const receiving=document.getElementById('activity').value==='Receive';
+      document.getElementById('receiveFields').classList.toggle('hidden',!receiving);
+      document.getElementById('useFields').classList.toggle('hidden',receiving);
+      if(!receiving)renderAvailable();
+    }
+    function renderAvailable(){
+      const select=document.getElementById('availableBox');
+      const available=boxes.filter(box=>box.status==='Available');
+      select.innerHTML=available.length?available.map(box=>'<option value="'+box.id+'">'+box.code+' — '+box.items.map(item=>item.product_name).join(', ')+'</option>').join(''):'<option value="">No available boxes</option>';
+    }
+    async function loadBoxes(){
+      const {data,error}=await database.from('luckin_boxes').select('id,box_code,status,luckin_box_items(product_name)').order('box_code');
+      if(error){alert('Cannot load stock: '+error.message);return;}
+      boxes=data.map(row=>({id:row.id,code:row.box_code,status:row.status,items:row.luckin_box_items||[]}));
+      renderAvailable();
+    }
+    function getItems(){
+      return [...document.querySelectorAll('.item')].map(row=>({
+        product_name:row.querySelector('.product').value,
+        size:row.querySelector('.size').value.trim(),
+        quantity:Number(row.querySelector('.quantity').value)
+      })).filter(item=>item.product_name||item.size||item.quantity!==1);
+    }
+    document.getElementById('activity').onchange=updateForm;
+    document.getElementById('addItem').onclick=addItem;
+    document.getElementById('form').onsubmit=async event=>{
       event.preventDefault();
-      const button = document.getElementById('submit');
-      button.disabled = true;
-      button.textContent = 'Saving...';
-
+      const button=document.getElementById('submit');button.disabled=true;button.textContent='Saving...';
       let error;
-      if (activity.value === 'Receive') {
-        const codes = codesFromField();
-        const product = document.getElementById('product').value.trim();
-        const size = document.getElementById('size').value.trim();
-        const notes = document.getElementById('notes').value.trim();
-
-        if (!codes.length || !product || !size) {
-          alert('Enter at least one box code, Product Name, and Size.');
-          button.disabled = false;
-          button.textContent = 'Save stock update';
-          return;
+      if(document.getElementById('activity').value==='Receive'){
+        const boxCode=document.getElementById('code').value.trim();
+        const notes=document.getElementById('notes').value.trim();
+        const items=getItems();
+        if(!boxCode||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
+          alert('Enter the box code, then complete Product name, Size, and Qty for every product.');
+          button.disabled=false;button.textContent='Save stock update';return;
         }
-
-        const duplicateCode = codes.find(code =>
-          boxes.some(box => String(box.code).toLowerCase() === code.toLowerCase())
-        );
-        if (duplicateCode) {
-          alert('Box code ' + duplicateCode + ' already exists. Remove it or use a different code.');
-          button.disabled = false;
-          button.textContent = 'Save stock update';
-          return;
-        }
-
-        ({ error } = await stockDatabase.from('luckin_boxes').insert(
-          codes.map(box_code => ({ box_code, product_name: product, size, notes }))
-        ));
-        if (!error) {
-          document.querySelector('#success h2').textContent = '✓ ' + codes.length + ' box' + (codes.length === 1 ? '' : 'es') + ' saved';
-          document.querySelector('#success p').textContent = 'All box records have been saved.';
-        }
-      } else {
-        const id = Number(document.getElementById('availableBox').value);
-        const branch = document.getElementById('branch').value.trim();
-        if (!id || !branch) {
-          alert('Choose an available box and enter the branch name.');
-          button.disabled = false;
-          button.textContent = 'Save stock update';
-          return;
-        }
-        ({ error } = await stockDatabase.from('luckin_boxes')
-          .update({ status: 'Used', branch, used_at: new Date().toISOString(), notes: document.getElementById('notes').value.trim() })
-          .eq('id', id));
+        const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes}).select('id').single();
+        error=boxError;
+        if(!error)({error}=await database.from('luckin_box_items').insert(items.map(item=>({...item,box_id:box.id}))));
+      }else{
+        const id=Number(document.getElementById('availableBox').value),branch=document.getElementById('branch').value.trim();
+        if(!id||!branch){alert('Choose an available box and enter the branch name.');button.disabled=false;button.textContent='Save stock update';return;}
+        ({error}=await database.from('luckin_boxes').update({status:'Used',branch,used_at:new Date().toISOString(),notes:document.getElementById('notes').value.trim()}).eq('id',id));
       }
-
-      if (error) {
-        alert(error.message);
-        button.disabled = false;
-        button.textContent = 'Save stock update';
-        return;
-      }
-      document.getElementById('formCard').classList.add('hidden');
-      document.getElementById('success').classList.remove('hidden');
+      if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return;}
+      document.getElementById('formCard').classList.add('hidden');document.getElementById('success').classList.remove('hidden');
     };
-  })();
-</script></body></html>
+    addItem();updateForm();loadBoxes();
+  </script>
+</body>
+</html>
