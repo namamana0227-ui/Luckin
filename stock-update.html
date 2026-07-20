@@ -9,4 +9,97 @@ const stockRow=row=>({id:row.id,code:row.box_code,product:row.product_name,size:
 async function loadSharedStock(){const {data,error}=await stockDatabase.from('luckin_boxes').select('*').order('received_at');if(error){alert('Cannot load Luckin stock: '+error.message);return}boxes=data.map(stockRow);updateForm()}
 document.getElementById('form').onsubmit=async event=>{event.preventDefault();const button=document.getElementById('submit');button.disabled=true;button.textContent='Saving...';let error;if(activity.value==='Receive'){const code=document.getElementById('code').value.trim(),product=document.getElementById('product').value.trim(),size=document.getElementById('size').value.trim();if(!code||!product||!size){alert('Enter Box Code, Product Name, and Size.');button.disabled=false;button.textContent='Save stock update';return}({error}=await stockDatabase.from('luckin_boxes').insert({box_code:code,product_name:product,size,notes:document.getElementById('notes').value.trim()}))}else{const id=Number(document.getElementById('availableBox').value),branch=document.getElementById('branch').value.trim();if(!id||!branch){alert('Choose an available box and enter the branch name.');button.disabled=false;button.textContent='Save stock update';return}({error}=await stockDatabase.from('luckin_boxes').update({status:'Used',branch,used_at:new Date().toISOString(),notes:document.getElementById('notes').value.trim()}).eq('id',id))}if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return}document.getElementById('formCard').classList.add('hidden');document.getElementById('success').classList.remove('hidden')};
 loadSharedStock();
+  // Faster multi-box receiving: one product and size can be used for many box codes.
+  (() => {
+    const originalCodeField = document.getElementById('code')?.closest('.field');
+    if (!originalCodeField) return;
+
+    originalCodeField.innerHTML = `
+      <label for="boxCodes">Box codes</label>
+      <textarea id="boxCodes" placeholder="Type or paste one box code per line&#10;Example:&#10;S02-12&#10;S02-13&#10;S02-14"></textarea>
+      <div class="box-help" id="boxCount">0 box codes entered</div>
+    `;
+
+    const extraStyle = document.createElement('style');
+    extraStyle.textContent = `
+      #boxCodes { min-height:125px; }
+      .box-help { margin-top:7px; color:var(--muted); font-size:12px; }
+      .quick-tip { margin:10px 0 0; padding:10px 11px; background:#fff0e5; border-radius:7px; font-size:12px; color:#7d391d; }
+    `;
+    document.head.appendChild(extraStyle);
+    document.querySelector('.notice').innerHTML = 'For received stock: enter all box codes together, one code per line. Product, size, and notes will be saved for every box.';
+
+    const codesFromField = () => [...new Set(
+      document.getElementById('boxCodes').value
+        .split(/[\n,]/)
+        .map(code => code.trim())
+        .filter(Boolean)
+    )];
+    const updateCount = () => {
+      const count = codesFromField().length;
+      document.getElementById('boxCount').textContent = count + (count === 1 ? ' box code entered' : ' box codes entered');
+    };
+    document.getElementById('boxCodes').addEventListener('input', updateCount);
+
+    document.getElementById('form').onsubmit = async event => {
+      event.preventDefault();
+      const button = document.getElementById('submit');
+      button.disabled = true;
+      button.textContent = 'Saving...';
+
+      let error;
+      if (activity.value === 'Receive') {
+        const codes = codesFromField();
+        const product = document.getElementById('product').value.trim();
+        const size = document.getElementById('size').value.trim();
+        const notes = document.getElementById('notes').value.trim();
+
+        if (!codes.length || !product || !size) {
+          alert('Enter at least one box code, Product Name, and Size.');
+          button.disabled = false;
+          button.textContent = 'Save stock update';
+          return;
+        }
+
+        const duplicateCode = codes.find(code =>
+          boxes.some(box => String(box.code).toLowerCase() === code.toLowerCase())
+        );
+        if (duplicateCode) {
+          alert('Box code ' + duplicateCode + ' already exists. Remove it or use a different code.');
+          button.disabled = false;
+          button.textContent = 'Save stock update';
+          return;
+        }
+
+        ({ error } = await stockDatabase.from('luckin_boxes').insert(
+          codes.map(box_code => ({ box_code, product_name: product, size, notes }))
+        ));
+        if (!error) {
+          document.querySelector('#success h2').textContent = '✓ ' + codes.length + ' box' + (codes.length === 1 ? '' : 'es') + ' saved';
+          document.querySelector('#success p').textContent = 'All box records have been saved.';
+        }
+      } else {
+        const id = Number(document.getElementById('availableBox').value);
+        const branch = document.getElementById('branch').value.trim();
+        if (!id || !branch) {
+          alert('Choose an available box and enter the branch name.');
+          button.disabled = false;
+          button.textContent = 'Save stock update';
+          return;
+        }
+        ({ error } = await stockDatabase.from('luckin_boxes')
+          .update({ status: 'Used', branch, used_at: new Date().toISOString(), notes: document.getElementById('notes').value.trim() })
+          .eq('id', id));
+      }
+
+      if (error) {
+        alert(error.message);
+        button.disabled = false;
+        button.textContent = 'Save stock update';
+        return;
+      }
+      document.getElementById('formCard').classList.add('hidden');
+      document.getElementById('success').classList.remove('hidden');
+    };
+  })();
 </script></body></html>
