@@ -45,11 +45,12 @@
     const database=supabase.createClient('https://pthvibwnyvlszmprfdit.supabase.co','sb_publishable_1UBB53SrLHpMhlrquuIOkw_4WtXsdE6');
     const products=['吊挂','侧标','非标','背光字','灯箱','Luckin Coffee立体站式','Photo Frame','字体 1(SILVER)','字体 2(SILVER)','字体 3(SILVER)','字体 4(SILVER)','字体 5(SILVER)','字体 6(SILVER)','字体 7(SILVER)','字体 8(SILVER)','字体 9(SILVER)','PICK UP(SILVER)','NO. MY (SILVER)','字体 1(COOPER)','字体 2(COOPER)','字体 3(COOPER)','字体 4(COOPER)','字体 5(COOPER)','字体 6(COOPER)','字体 7(COOPER)','字体 8(COOPER)','字体 9(COOPER)','PICK UP(COOPER)','NO. MY (COOPER)','蓝底白鹿-正面鹿头','双面火箱古铜色','fabric lightbox','横板背架-非标Luckin Coffee'];
     let boxes=[];
-    const productOptions='<option value="">Select product</option>'+products.map(product=>'<option>'+product+'</option>').join('');
+    const productOptions='<option value="">Select product</option>'+products.map(product=>'<option>'+product+'</option>').join('')+'<option value="__other__">Other — type a new product</option>';
     function addItem(){
       const row=document.createElement('div');
       row.className='item';
-      row.innerHTML='<div class="product-field"><label>Product name</label><select class="product">'+productOptions+'</select></div><div><label>Size</label><input class="size" placeholder="Example: 600mm"></div><div class="quantity-field"><label>Qty</label><input class="quantity" type="number" min="1" value="1"></div><button type="button" class="remove" title="Remove product">×</button>';
+      row.innerHTML='<div class="product-field"><label>Product name</label><select class="product">'+productOptions+'</select><input class="other-product hidden" placeholder="Type the new product name"></div><div><label>Size</label><input class="size" placeholder="Example: 600mm"></div><div class="quantity-field"><label>Qty</label><input class="quantity" type="number" min="1" value="1"></div><button type="button" class="remove" title="Remove product">×</button>';
+      row.querySelector('.product').onchange=event=>row.querySelector('.other-product').classList.toggle('hidden',event.target.value!=='__other__');
       row.querySelector('.remove').onclick=()=>{if(document.querySelectorAll('.item').length>1)row.remove();};
       document.getElementById('items').appendChild(row);
     }
@@ -72,7 +73,7 @@
     }
     function getItems(){
       return [...document.querySelectorAll('.item')].map(row=>({
-        product_name:row.querySelector('.product').value,
+        product_name:row.querySelector('.product').value==='__other__'?row.querySelector('.other-product').value.trim():row.querySelector('.product').value,
         size:row.querySelector('.size').value.trim(),
         quantity:Number(row.querySelector('.quantity').value)
       })).filter(item=>item.product_name||item.size||item.quantity!==1);
