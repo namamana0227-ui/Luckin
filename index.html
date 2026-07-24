@@ -20,13 +20,14 @@
     <aside><div class="brand">LUCKIN<small>Box Stock Tracker</small></div><nav class="nav"><button class="active" data-view="dashboard">▦ Dashboard</button><button data-view="boxes">▣ Box Register</button><button data-view="products">◷ Product Summary</button><a class="link" href="stock-update.html">↗ Update stock</a></nav><div class="help">Every box code can contain one or more product items.</div></aside>
     <main>
       <section id="dashboard-view"><div class="top"><div><div class="eyebrow">Stock overview</div><h1>Luckin box tracker</h1><p>Receive boxes, allocate them to branches, and check product stock.</p></div><div class="pill" id="today"></div></div><div class="metrics"><div class="metric"><label>Total boxes</label><b id="total">0</b></div><div class="metric"><label>Available boxes</label><b id="available">0</b></div><div class="metric"><label>Used for branches</label><b id="used">0</b></div><div class="metric"><label>Product types</label><b id="productCount">0</b></div></div><div class="card"><div class="card-head"><h2>Latest box movements</h2><div class="sub">Each box code may contain multiple products</div></div><div class="table"><table><thead><tr><th>Box code</th><th>Products inside</th><th>Status</th><th>Branch</th></tr></thead><tbody id="recentRows"></tbody></table></div></div></section>
-      <section id="boxes-view" class="hidden"><div class="section-head"><div><div class="eyebrow">All coded boxes</div><h2>Box register</h2></div><button class="small" onclick="exportCsv()">Export CSV</button></div><div class="card"><div class="table"><table><thead><tr><th>Box code</th><th>Products inside</th><th>Received</th><th>Status</th><th>Used for branch</th><th>Action</th></tr></thead><tbody id="boxRows"></tbody></table></div></div></section>
+      <section id="boxes-view" class="hidden"><div class="section-head"><div><div class="eyebrow">All coded boxes</div><h2>Box register</h2></div><button class="small" onclick="exportCsv()">Export Excel report</button></div><div class="card"><div class="table"><table><thead><tr><th>Box code</th><th>Products inside</th><th>Received</th><th>Status</th><th>Used for branch</th><th>Action</th></tr></thead><tbody id="boxRows"></tbody></table></div></div></section>
       <section id="products-view" class="hidden"><div class="section-head"><div><div class="eyebrow">Stock by product</div><h2>Product summary</h2></div></div><div class="card"><div class="table"><table><thead><tr><th>Product name</th><th>Size</th><th>Total qty</th><th>Qty in used boxes</th><th>Extra qty available</th></tr></thead><tbody id="productRows"></tbody></table></div></div></section>
     </main>
   </div>
   <div class="modal-wrap hidden" id="useModal"><div class="modal"><div class="modal-top"><h2>Use product from box</h2><button class="close" onclick="closeUseModal()">×</button></div><p class="muted" id="useBoxCode"></p><form id="useForm"><div class="field"><label for="useItem">Product</label><select id="useItem"></select></div><div class="field"><label for="useQuantity">Quantity to use</label><input id="useQuantity" type="number" min="1" value="1"></div><div class="field"><label for="useBranch">Use for Luckin branch</label><input id="useBranch" placeholder="Example: Luckin KLCC"></div><button class="save" id="useSubmit">Save product usage</button></form></div></div>
   <div class="modal-wrap hidden" id="editModal"><div class="modal"><div class="modal-top"><h2>Edit box record</h2><button class="close" onclick="closeEditModal()">×</button></div><form id="editForm"><div class="field"><label for="editCode">Box code</label><input id="editCode" required></div><div class="field"><label for="editDate">Received date</label><input id="editDate" type="date" required></div><div class="field"><label>Products inside this box</label><div class="edit-items" id="editItems"></div><button type="button" class="add-item" onclick="addEditItem()">+ Add product</button></div><div class="field"><label for="editNotes">Notes</label><input id="editNotes" placeholder="Optional notes"></div><button class="save" id="editSubmit">Save changes</button></form></div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <script>
     const database=supabase.createClient('https://pthvibwnyvlszmprfdit.supabase.co','sb_publishable_1UBB53SrLHpMhlrquuIOkw_4WtXsdE6');
     let boxes=[];
@@ -100,7 +101,34 @@
       closeUseModal();await loadBoxes();button.disabled=false;button.textContent='Save product usage';
     };
     window.deleteBox=async id=>{if(!confirm('Delete this box and all products inside it?'))return;const {error}=await database.from('luckin_boxes').delete().eq('id',id);if(error){alert(error.message);return;}loadBoxes();};
-    function exportCsv(){const rows=sortedBoxes().flatMap(box=>box.items.map(item=>[box.code,item.product_name,item.size,item.quantity,box.receivedAt,box.status,box.branch,box.notes]));const csv=[['Box Code','Product Name','Size','Qty','Received At','Status','Used for Branch','Notes'],...rows].map(row=>row.map(value=>'"'+String(value??'').replaceAll('"','""')+'"').join(',')).join('\n');const link=document.createElement('a');link.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));link.download='luckin-box-stock.csv';link.click();URL.revokeObjectURL(link.href);}
+    function exportCsv(){
+      if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
+      const reportDate=value=>{const parts=String(value||'').split('-');return parts.length===3?parts[2]+'-'+parts[1]+'-'+parts[0]:value||'';};
+      const headings=['No','BOX CODE','PRODUCT NAME','SIZE','RECEIVED DATE','TOTAL QTY','USED QTY','EXTRA QTY','STATUS','USED FOR BRANCH','NOTES'];
+      const rows=sortedBoxes().flatMap(box=>box.items.map(item=>[
+        '',box.code,item.product_name,item.size,reportDate(box.receivedDate),Number(item.quantity)||0,Number(item.usedQty)||0,Number(item.availableQty)||0,box.status,box.branch||'',box.notes||''
+      ]));
+      rows.forEach((row,index)=>row[0]=index+1);
+      const sheet=XLSX.utils.aoa_to_sheet([['LUCKIN STOCK REPORT'],['Box stock received, used, and extra balance'],headings,...rows]);
+      sheet['!merges']=[XLSX.utils.decode_range('A1:K1'),XLSX.utils.decode_range('A2:K2')];
+      sheet['!cols']=[{wch:7},{wch:14},{wch:31},{wch:16},{wch:15},{wch:11},{wch:10},{wch:11},{wch:16},{wch:28},{wch:36}];
+      sheet['!rows']=[{hpt:28},{hpt:20},{hpt:23}];
+      const border={top:{style:'thin',color:{rgb:'E8C59E'}},bottom:{style:'thin',color:{rgb:'E8C59E'}},left:{style:'thin',color:{rgb:'E8C59E'}},right:{style:'thin',color:{rgb:'E8C59E'}}};
+      for(let column=0;column<headings.length;column++){
+        const title=sheet[XLSX.utils.encode_cell({r:0,c:column})],subtitle=sheet[XLSX.utils.encode_cell({r:1,c:column})],header=sheet[XLSX.utils.encode_cell({r:2,c:column})];
+        if(title)title.s={font:{bold:true,sz:16,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'B84A16'}},alignment:{horizontal:'center',vertical:'center'}};
+        if(subtitle)subtitle.s={font:{italic:true,color:{rgb:'815D4C'}},fill:{fgColor:{rgb:'FFF4EB'}},alignment:{horizontal:'center',vertical:'center'}};
+        if(header)header.s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'54200D'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border};
+      }
+      for(let row=3;row<3+rows.length;row++){
+        for(let column=0;column<headings.length;column++){
+          const cell=sheet[XLSX.utils.encode_cell({r:row,c:column})];
+          if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border,fill:{fgColor:{rgb:row%2?'FFF9F2':'FFFFFF'}}};
+        }
+      }
+      sheet['!autofilter']={ref:'A3:K'+Math.max(3,rows.length+3)};
+      const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,sheet,'Luckin Stock');XLSX.writeFile(workbook,'Luckin Stock Report.xlsx');
+    }
     function showView(view){document.querySelectorAll('main section').forEach(section=>section.classList.add('hidden'));document.getElementById(view+'-view').classList.remove('hidden');document.querySelectorAll('.nav button').forEach(button=>button.classList.toggle('active',button.dataset.view===view));}
     document.querySelectorAll('.nav button').forEach(button=>button.onclick=()=>showView(button.dataset.view));
     async function loadBoxes(){const {data,error}=await database.from('luckin_boxes').select('id,box_code,received_at,status,branch,used_at,notes,luckin_box_items(id,product_name,size,quantity,luckin_item_usages(quantity,branch,used_at))').order('box_code');if(error){alert('Cannot load stock: '+error.message);return;}boxes=data.map(row=>{const items=(row.luckin_box_items||[]).map(item=>{const usedQty=(item.luckin_item_usages||[]).reduce((sum,usage)=>sum+Number(usage.quantity||0),0);return {...item,usedQty,availableQty:Math.max(0,Number(item.quantity)-usedQty)};});const total=items.reduce((sum,item)=>sum+Number(item.quantity),0),usedQty=items.reduce((sum,item)=>sum+item.usedQty,0);return {id:row.id,code:row.box_code,receivedAt:new Date(row.received_at).toLocaleString('en-MY'),receivedDate:String(row.received_at||'').slice(0,10),status:usedQty===0?'Available':usedQty>=total?'Used':'Partially used',branch:row.branch||'',usedAt:row.used_at?new Date(row.used_at).toLocaleString('en-MY'):'',notes:row.notes||'',items};});renderAll();}
