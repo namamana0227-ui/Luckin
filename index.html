@@ -3,6 +3,9 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#b84a16">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
   <title>Luckin Stock Tracker</title>
   <style>
     :root{--orange:#b84a16;--deep:#54200d;--paper:#fff4eb;--line:#edc7af;--muted:#815d4c;--green:#167042}
@@ -17,11 +20,12 @@
 </head>
 <body>
   <div class="app">
-    <aside><div class="brand">LUCKIN<small>Box Stock Tracker</small></div><nav class="nav"><button class="active" data-view="dashboard">▦ Dashboard</button><button data-view="boxes">▣ Box Register</button><button data-view="products">◷ Product Summary</button><a class="link" href="stock-update.html">↗ Update stock</a></nav><div class="help">Every box code can contain one or more product items.</div></aside>
+    <aside><div class="brand">LUCKIN<small>Box Stock Tracker</small></div><nav class="nav"><button class="active" data-view="dashboard">▦ Dashboard</button><button data-view="boxes">▣ Box Register</button><button data-view="products">◷ Product Summary</button><button data-view="movements">↗ Stock Movements</button><a class="link" href="stock-update.html">↗ Update stock</a></nav><div class="help">Every box code can contain one or more product items.</div></aside>
     <main>
       <section id="dashboard-view"><div class="top"><div><div class="eyebrow">Stock overview</div><h1>Luckin box tracker</h1><p>Receive boxes, allocate them to branches, and check product stock.</p></div><div class="pill" id="today"></div></div><div class="metrics"><div class="metric"><label>Total boxes</label><b id="total">0</b></div><div class="metric"><label>Available boxes</label><b id="available">0</b></div><div class="metric"><label>Used for branches</label><b id="used">0</b></div><div class="metric"><label>Product types</label><b id="productCount">0</b></div></div><div class="card"><div class="card-head"><h2>Latest box movements</h2><div class="sub">Each box code may contain multiple products</div></div><div class="table"><table><thead><tr><th>Box code</th><th>Products inside</th><th>Status</th><th>Branch</th></tr></thead><tbody id="recentRows"></tbody></table></div></div></section>
       <section id="boxes-view" class="hidden"><div class="section-head"><div><div class="eyebrow">All coded boxes</div><h2>Box register</h2></div><button class="small" onclick="exportCsv()">Export Excel report</button></div><div class="card"><div class="table"><table><thead><tr><th>Box code</th><th>Products inside</th><th>Received</th><th>Status</th><th>Used for branch</th><th>Action</th></tr></thead><tbody id="boxRows"></tbody></table></div></div></section>
       <section id="products-view" class="hidden"><div class="section-head"><div><div class="eyebrow">Stock by product</div><h2>Product summary</h2></div><button class="small" onclick="exportProductSummary()">Export Excel report</button></div><div class="card"><div class="table"><table><thead><tr><th>Product name</th><th>Size</th><th>Total qty</th><th>Qty in used boxes</th><th>Extra qty available</th></tr></thead><tbody id="productRows"></tbody></table></div></div></section>
+      <section id="movements-view" class="hidden"><div class="section-head"><div><div class="eyebrow">Where stock goes</div><h2>Stock movements</h2></div></div><div class="card"><div class="card-head"><h2>Products used for Luckin branches</h2><div class="sub">Every product usage is recorded here.</div></div><div class="table"><table><thead><tr><th>Used date</th><th>Box code</th><th>Product name</th><th>Size</th><th>Qty used</th><th>Used for branch</th></tr></thead><tbody id="movementRows"></tbody></table></div></div></section>
     </main>
   </div>
   <div class="modal-wrap hidden" id="useModal"><div class="modal"><div class="modal-top"><h2>Use product from box</h2><button class="close" onclick="closeUseModal()">×</button></div><p class="muted" id="useBoxCode"></p><form id="useForm"><div class="field"><label>Products to use</label><div class="use-items" id="useItems"></div></div><div class="field"><label for="useBranch">Use for Luckin branch</label><input id="useBranch" placeholder="Example: Luckin KLCC"></div><button class="save" id="useSubmit">Save product usage</button></form></div></div>
@@ -54,12 +58,19 @@
       const rows=Object.values(groups).sort((a,b)=>a.product.localeCompare(b.product)||a.size.localeCompare(b.size));
       document.getElementById('productRows').innerHTML=rows.length?rows.map(item=>'<tr><td class="name">'+escape(item.product)+'</td><td>'+escape(item.size)+'</td><td>'+item.total+'</td><td>'+item.used+'</td><td>'+Math.max(0,item.total-item.used)+'</td></tr>').join(''):'<tr><td colspan="5" class="muted">No products recorded yet.</td></tr>';
     }
+    function stockMovementRows(){
+      return boxes.flatMap(box=>box.items.flatMap(item=>(item.luckin_item_usages||[]).map(usage=>({boxCode:box.code,product:item.product_name,size:item.size,quantity:Number(usage.quantity)||0,branch:usage.branch||'',usedAt:usage.used_at||''})))).sort((a,b)=>new Date(b.usedAt)-new Date(a.usedAt));
+    }
+    function renderMovements(){
+      const rows=stockMovementRows();
+      document.getElementById('movementRows').innerHTML=rows.length?rows.map(row=>'<tr><td>'+escape(row.usedAt?new Date(row.usedAt).toLocaleString('en-MY'):'—')+'</td><td class="name">'+escape(row.boxCode)+'</td><td>'+escape(row.product)+'</td><td>'+escape(row.size||'—')+'</td><td>'+row.quantity+'</td><td class="name">'+escape(row.branch||'—')+'</td></tr>').join(''):'<tr><td colspan="6" class="muted">No product usage recorded yet. Use “Use product” in Box Register to record where stock goes.</td></tr>';
+    }
     function productSummaryRows(){
       const groups={};
       boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name+'|'+item.size;if(!groups[key])groups[key]={product:item.product_name,size:item.size,total:0,used:0};groups[key].total+=Number(item.quantity)||0;groups[key].used+=Number(item.usedQty)||0;}));
       return Object.values(groups).sort((a,b)=>a.product.localeCompare(b.product)||a.size.localeCompare(b.size));
     }
-    function renderAll(){renderDashboard();renderBoxes();renderProducts();}
+    function renderAll(){renderDashboard();renderBoxes();renderProducts();renderMovements();}
     let selectedBox;
     window.useBox=id=>{
       selectedBox=boxes.find(box=>box.id===id);if(!selectedBox)return;
@@ -157,5 +168,6 @@
     async function loadBoxes(){const {data,error}=await database.from('luckin_boxes').select('id,box_code,received_at,status,branch,used_at,notes,luckin_box_items(id,product_name,size,quantity,luckin_item_usages(quantity,branch,used_at))').order('box_code');if(error){alert('Cannot load stock: '+error.message);return;}boxes=data.map(row=>{const items=(row.luckin_box_items||[]).map(item=>{const usedQty=(item.luckin_item_usages||[]).reduce((sum,usage)=>sum+Number(usage.quantity||0),0);return {...item,usedQty,availableQty:Math.max(0,Number(item.quantity)-usedQty)};});const total=items.reduce((sum,item)=>sum+Number(item.quantity),0),usedQty=items.reduce((sum,item)=>sum+item.usedQty,0);return {id:row.id,code:row.box_code,receivedAt:new Date(row.received_at).toLocaleString('en-MY'),receivedDate:String(row.received_at||'').slice(0,10),status:usedQty===0?'Available':usedQty>=total?'Used':'Partially used',branch:row.branch||'',usedAt:row.used_at?new Date(row.used_at).toLocaleString('en-MY'):'',notes:row.notes||'',items};});renderAll();}
     loadBoxes();
   </script>
+  <script>if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));</script>
 </body>
 </html>
