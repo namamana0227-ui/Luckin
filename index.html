@@ -123,13 +123,24 @@
         const branches=[...new Set((item.luckin_item_usages||[]).map(usage=>usage.branch).filter(Boolean))];
         return ['',index===0?box.code:'',itemName(item),branches.join(', ')];
       }));
-      const balanceRows=sortedBoxes().flatMap(box=>box.items.filter(item=>item.availableQty>0).map(item=>['',itemName(item),item.availableQty+' unit'+(item.availableQty===1?'':'s'),box.code,'']));
+      const balanceGroups={};
+      sortedBoxes().forEach(box=>box.items.filter(item=>item.availableQty>0).forEach(item=>{
+        if(!balanceGroups[item.product_name])balanceGroups[item.product_name]=[];
+        balanceGroups[item.product_name].push({size:item.size||'',quantity:item.availableQty,code:box.code});
+      }));
+      const balanceData=[[],[]],balanceTitleRows=[],balanceHeaderRows=[],balanceItemRows=[];
+      Object.keys(balanceGroups).sort((a,b)=>a.localeCompare(b)).forEach(product=>{
+        balanceTitleRows.push(balanceData.length);balanceData.push(['',product]);
+        balanceHeaderRows.push(balanceData.length);balanceData.push(['','Balance Stock','Quantity','From Code','Use To']);
+        balanceGroups[product].forEach(item=>{balanceItemRows.push(balanceData.length);balanceData.push(['',item.size||product,item.quantity+' unit'+(item.quantity===1?'':'s'),item.code,'']);});
+        balanceData.push([]);
+      });
       const branchSheet=XLSX.utils.aoa_to_sheet([[],['','CODE','ITEM','INSTALLATION'],...branchRows]);
-      const balanceSheet=XLSX.utils.aoa_to_sheet([[],[],['','BALANCE STOCK'],['','Balance Stock','Quantity','From Code','Use To'],...balanceRows]);
+      const balanceSheet=XLSX.utils.aoa_to_sheet(balanceData);
       branchSheet['!cols']=[{wch:4},{wch:14},{wch:38},{wch:28}];
       balanceSheet['!cols']=[{wch:4},{wch:40},{wch:14},{wch:16},{wch:28}];
       branchSheet['!rows']=[{hpt:10},{hpt:22}];
-      balanceSheet['!rows']=[{hpt:10},{hpt:10},{hpt:22},{hpt:22}];
+      balanceSheet['!rows']=[{hpt:10},{hpt:10}];
       const border={top:{style:'thin',color:{rgb:'BFBFBF'}},bottom:{style:'thin',color:{rgb:'BFBFBF'}},left:{style:'thin',color:{rgb:'BFBFBF'}},right:{style:'thin',color:{rgb:'BFBFBF'}}};
       for(let column=1;column<=3;column++){
         const cell=branchSheet[XLSX.utils.encode_cell({r:1,c:column})];
@@ -139,17 +150,10 @@
         const cell=branchSheet[XLSX.utils.encode_cell({r:row,c:column})];
         if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};
       }
-      const balanceTitle=balanceSheet['B3'];if(balanceTitle)balanceTitle.s={font:{bold:true,sz:13,color:{rgb:'000000'}},alignment:{vertical:'center'}};
-      for(let column=1;column<=4;column++){
-        const cell=balanceSheet[XLSX.utils.encode_cell({r:3,c:column})];
-        if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'FFC000'}},alignment:{horizontal:'center',vertical:'center'},border};
-      }
-      for(let row=4;row<4+balanceRows.length;row++)for(let column=1;column<=4;column++){
-        const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];
-        if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};
-      }
+      balanceTitleRows.forEach(row=>{const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:1})];if(cell)cell.s={font:{bold:true,sz:13,color:{rgb:'000000'}},alignment:{vertical:'center'}};});
+      balanceHeaderRows.forEach(row=>{for(let column=1;column<=4;column++){const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'FFC000'}},alignment:{horizontal:'center',vertical:'center'},border};}});
+      balanceItemRows.forEach(row=>{for(let column=1;column<=4;column++){const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};}});
       branchSheet['!autofilter']={ref:'B2:D'+Math.max(2,branchRows.length+2)};
-      balanceSheet['!autofilter']={ref:'B4:E'+Math.max(4,balanceRows.length+4)};
       const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,branchSheet,'Branch Stock');XLSX.utils.book_append_sheet(workbook,balanceSheet,'Balance Stock');XLSX.writeFile(workbook,'Luckin Stock Report.xlsx');
     }
     window.exportProductSummary=()=>{
