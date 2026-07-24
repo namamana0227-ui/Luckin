@@ -118,31 +118,39 @@
     window.deleteBox=async id=>{if(!confirm('Delete this box and all products inside it?'))return;const {error}=await database.from('luckin_boxes').delete().eq('id',id);if(error){alert(error.message);return;}loadBoxes();};
     function exportCsv(){
       if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
-      const reportDate=value=>{const parts=String(value||'').split('-');return parts.length===3?parts[2]+'-'+parts[1]+'-'+parts[0]:value||'';};
-      const headings=['No','BOX CODE','PRODUCT NAME','SIZE','RECEIVED DATE','TOTAL QTY','USED QTY','EXTRA QTY','STATUS','USED FOR BRANCH','NOTES'];
-      const rows=sortedBoxes().flatMap(box=>box.items.map(item=>[
-        '',box.code,item.product_name,item.size,reportDate(box.receivedDate),Number(item.quantity)||0,Number(item.usedQty)||0,Number(item.availableQty)||0,box.status,box.branch||'',box.notes||''
-      ]));
-      rows.forEach((row,index)=>row[0]=index+1);
-      const sheet=XLSX.utils.aoa_to_sheet([['LUCKIN STOCK REPORT'],['Box stock received, used, and extra balance'],headings,...rows]);
-      sheet['!merges']=[XLSX.utils.decode_range('A1:K1'),XLSX.utils.decode_range('A2:K2')];
-      sheet['!cols']=[{wch:7},{wch:14},{wch:31},{wch:16},{wch:15},{wch:11},{wch:10},{wch:11},{wch:16},{wch:28},{wch:36}];
-      sheet['!rows']=[{hpt:28},{hpt:20},{hpt:23}];
-      const border={top:{style:'thin',color:{rgb:'E8C59E'}},bottom:{style:'thin',color:{rgb:'E8C59E'}},left:{style:'thin',color:{rgb:'E8C59E'}},right:{style:'thin',color:{rgb:'E8C59E'}}};
-      for(let column=0;column<headings.length;column++){
-        const title=sheet[XLSX.utils.encode_cell({r:0,c:column})],subtitle=sheet[XLSX.utils.encode_cell({r:1,c:column})],header=sheet[XLSX.utils.encode_cell({r:2,c:column})];
-        if(title)title.s={font:{bold:true,sz:16,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'B84A16'}},alignment:{horizontal:'center',vertical:'center'}};
-        if(subtitle)subtitle.s={font:{italic:true,color:{rgb:'815D4C'}},fill:{fgColor:{rgb:'FFF4EB'}},alignment:{horizontal:'center',vertical:'center'}};
-        if(header)header.s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'54200D'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border};
+      const itemName=item=>item.product_name+(item.size?' '+item.size:'');
+      const branchRows=sortedBoxes().flatMap(box=>box.items.map((item,index)=>{
+        const branches=[...new Set((item.luckin_item_usages||[]).map(usage=>usage.branch).filter(Boolean))];
+        return ['',index===0?box.code:'',itemName(item),branches.join(', ')];
+      }));
+      const balanceRows=sortedBoxes().flatMap(box=>box.items.filter(item=>item.availableQty>0).map(item=>['',itemName(item),item.availableQty+' unit'+(item.availableQty===1?'':'s'),box.code,'']));
+      const branchSheet=XLSX.utils.aoa_to_sheet([[],['','CODE','ITEM','INSTALLATION'],...branchRows]);
+      const balanceSheet=XLSX.utils.aoa_to_sheet([[],[],['','BALANCE STOCK'],['','Balance Stock','Quantity','From Code','Use To'],...balanceRows]);
+      branchSheet['!cols']=[{wch:4},{wch:14},{wch:38},{wch:28}];
+      balanceSheet['!cols']=[{wch:4},{wch:40},{wch:14},{wch:16},{wch:28}];
+      branchSheet['!rows']=[{hpt:10},{hpt:22}];
+      balanceSheet['!rows']=[{hpt:10},{hpt:10},{hpt:22},{hpt:22}];
+      const border={top:{style:'thin',color:{rgb:'BFBFBF'}},bottom:{style:'thin',color:{rgb:'BFBFBF'}},left:{style:'thin',color:{rgb:'BFBFBF'}},right:{style:'thin',color:{rgb:'BFBFBF'}}};
+      for(let column=1;column<=3;column++){
+        const cell=branchSheet[XLSX.utils.encode_cell({r:1,c:column})];
+        if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'FFC000'}},alignment:{horizontal:'center',vertical:'center'},border};
       }
-      for(let row=3;row<3+rows.length;row++){
-        for(let column=0;column<headings.length;column++){
-          const cell=sheet[XLSX.utils.encode_cell({r:row,c:column})];
-          if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border,fill:{fgColor:{rgb:row%2?'FFF9F2':'FFFFFF'}}};
-        }
+      for(let row=2;row<2+branchRows.length;row++)for(let column=1;column<=3;column++){
+        const cell=branchSheet[XLSX.utils.encode_cell({r:row,c:column})];
+        if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};
       }
-      sheet['!autofilter']={ref:'A3:K'+Math.max(3,rows.length+3)};
-      const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,sheet,'Luckin Stock');XLSX.writeFile(workbook,'Luckin Stock Report.xlsx');
+      const balanceTitle=balanceSheet['B3'];if(balanceTitle)balanceTitle.s={font:{bold:true,sz:13,color:{rgb:'000000'}},alignment:{vertical:'center'}};
+      for(let column=1;column<=4;column++){
+        const cell=balanceSheet[XLSX.utils.encode_cell({r:3,c:column})];
+        if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'FFC000'}},alignment:{horizontal:'center',vertical:'center'},border};
+      }
+      for(let row=4;row<4+balanceRows.length;row++)for(let column=1;column<=4;column++){
+        const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];
+        if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};
+      }
+      branchSheet['!autofilter']={ref:'B2:D'+Math.max(2,branchRows.length+2)};
+      balanceSheet['!autofilter']={ref:'B4:E'+Math.max(4,balanceRows.length+4)};
+      const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,branchSheet,'Branch Stock');XLSX.utils.book_append_sheet(workbook,balanceSheet,'Balance Stock');XLSX.writeFile(workbook,'Luckin Stock Report.xlsx');
     }
     window.exportProductSummary=()=>{
       if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
