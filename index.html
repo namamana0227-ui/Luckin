@@ -120,19 +120,17 @@
       if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
       const itemName=item=>item.product_name+(item.size?' '+item.size:'');
       const branchRows=[],branchBoxEndRows=[];
-      const branchItems=[];
-      sortedBoxes().forEach(box=>box.items.forEach(item=>(item.luckin_item_usages||[]).forEach(usage=>{
-        if(usage.branch&&Number(usage.quantity)>0)branchItems.push({branch:usage.branch,code:box.code,item:itemName(item),quantity:Number(usage.quantity)});
-      })));
-      branchItems.sort((first,second)=>first.branch.localeCompare(second.branch)||first.code.localeCompare(second.code)||first.item.localeCompare(second.item));
-      branchItems.forEach((entry,index)=>{
-        const sameBox=index>0&&entry.branch===branchItems[index-1].branch&&entry.code===branchItems[index-1].code;
-        branchRows.push(['',sameBox?'':entry.code,entry.item+(entry.quantity>1?' x'+entry.quantity:''),sameBox?'':entry.branch]);
-        const next=branchItems[index+1];
-        if(!next||entry.branch!==next.branch||entry.code!==next.code)branchBoxEndRows.push(branchRows.length+1);
+      const batchBoxes={};
+      sortedBoxes().forEach(box=>{const batch=box.receivedDate||'No received date';if(!batchBoxes[batch])batchBoxes[batch]=[];batchBoxes[batch].push(box);});
+      const completeBox=box=>box.items.length>0&&box.items.every(item=>Number(item.usedQty)===0);
+      const branchBoxIds=new Set();
+      Object.values(batchBoxes).forEach(batch=>{const complete=batch.filter(completeBox);if(complete.length>=3)complete.forEach(box=>branchBoxIds.add(box.id));});
+      sortedBoxes().filter(box=>branchBoxIds.has(box.id)).forEach(box=>{
+        box.items.forEach((item,index)=>branchRows.push(['',index===0?box.code:'',itemName(item),index===0?(box.branch||''):'']));
+        if(box.items.length)branchBoxEndRows.push(branchRows.length+1);
       });
       const balanceGroups={};
-      sortedBoxes().forEach(box=>box.items.filter(item=>item.availableQty>0).forEach(item=>{
+      sortedBoxes().filter(box=>!branchBoxIds.has(box.id)).forEach(box=>box.items.filter(item=>item.availableQty>0).forEach(item=>{
         if(!balanceGroups[item.product_name])balanceGroups[item.product_name]=[];
         balanceGroups[item.product_name].push({size:item.size||'',quantity:item.availableQty,code:box.code});
       }));
