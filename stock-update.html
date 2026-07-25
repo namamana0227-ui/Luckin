@@ -27,6 +27,8 @@
       <form id="form">
         <div id="receiveFields">
           <div class="field"><label for="code">Box code</label><input id="code" placeholder="Example: S01-19"></div>
+          <div class="field"><label for="stockSet">Stock set name</label><input id="stockSet" placeholder="Example: KLCC Set 01"></div>
+          <div class="field"><label for="setBoxCount">Total boxes in this stock set</label><input id="setBoxCount" type="number" min="1" placeholder="Example: 7"></div>
           <div class="field"><label>Products inside this box</label><div class="items" id="items"></div><button class="add" type="button" id="addItem">+ Add another product</button></div>
         </div>
         <div class="field"><label for="notes">Notes</label><textarea id="notes" placeholder="Optional delivery or installation notes."></textarea></div>
@@ -61,13 +63,15 @@
       const button=document.getElementById('submit');button.disabled=true;button.textContent='Saving...';
       let error;
       const boxCode=document.getElementById('code').value.trim();
+      const stockSet=document.getElementById('stockSet').value.trim();
+      const setBoxCount=Number(document.getElementById('setBoxCount').value);
       const notes=document.getElementById('notes').value.trim();
       const items=getItems();
-      if(!boxCode||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
-        alert('Enter the box code, then complete Product name, Size, and Qty for every product.');
+      if(!boxCode||!stockSet||!Number.isInteger(setBoxCount)||setBoxCount<1||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
+        alert('Enter the box code, stock set name, total boxes in the set, then complete Product name, Size, and Qty for every product.');
         button.disabled=false;button.textContent='Save stock update';return;
       }
-      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes}).select('id').single();
+      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,stock_set:stockSet,set_box_count:setBoxCount,notes}).select('id').single();
       error=boxError;
       if(!error)({error}=await database.from('luckin_box_items').insert(items.map(item=>({...item,box_id:box.id}))));
       if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return;}
