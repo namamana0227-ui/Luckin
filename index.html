@@ -119,10 +119,14 @@
     function exportCsv(){
       if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
       const itemName=item=>item.product_name+(item.size?' '+item.size:'');
-      const branchRows=sortedBoxes().flatMap(box=>box.items.map((item,index)=>{
-        const branches=[...new Set((item.luckin_item_usages||[]).map(usage=>usage.branch).filter(Boolean))];
-        return ['',index===0?box.code:'',itemName(item),branches.join(', ')];
-      }));
+      const branchRows=[],branchBoxEndRows=[];
+      sortedBoxes().forEach(box=>{
+        box.items.forEach((item,index)=>{
+          const branches=[...new Set((item.luckin_item_usages||[]).map(usage=>usage.branch).filter(Boolean))];
+          branchRows.push(['',index===0?box.code:'',itemName(item),branches.join(', ')]);
+        });
+        if(box.items.length)branchBoxEndRows.push(branchRows.length+1);
+      });
       const balanceGroups={};
       sortedBoxes().forEach(box=>box.items.filter(item=>item.availableQty>0).forEach(item=>{
         if(!balanceGroups[item.product_name])balanceGroups[item.product_name]=[];
@@ -150,6 +154,10 @@
         const cell=branchSheet[XLSX.utils.encode_cell({r:row,c:column})];
         if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};
       }
+      branchBoxEndRows.forEach(row=>{for(let column=1;column<=3;column++){
+        const cell=branchSheet[XLSX.utils.encode_cell({r:row,c:column})];
+        if(cell)cell.s={...cell.s,border:{...border,bottom:{style:'medium',color:{rgb:'F89521'}}}};
+      }});
       balanceTitleRows.forEach(row=>{const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:1})];if(cell)cell.s={font:{bold:true,sz:13,color:{rgb:'000000'}},alignment:{vertical:'center'}};});
       balanceHeaderRows.forEach(row=>{for(let column=1;column<=3;column++){const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'FFC000'}},alignment:{horizontal:'center',vertical:'center'},border};}});
       balanceItemRows.forEach(row=>{for(let column=1;column<=3;column++){const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};}});
