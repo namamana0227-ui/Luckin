@@ -120,12 +120,16 @@
       if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
       const itemName=item=>item.product_name+(item.size?' '+item.size:'');
       const branchRows=[],branchBoxEndRows=[];
-      sortedBoxes().forEach(box=>{
-        box.items.forEach((item,index)=>{
-          const branches=[...new Set((item.luckin_item_usages||[]).map(usage=>usage.branch).filter(Boolean))];
-          branchRows.push(['',index===0?box.code:'',itemName(item),index===0?branches.join(', '):'']);
-        });
-        if(box.items.length)branchBoxEndRows.push(branchRows.length+1);
+      const branchItems=[];
+      sortedBoxes().forEach(box=>box.items.forEach(item=>(item.luckin_item_usages||[]).forEach(usage=>{
+        if(usage.branch&&Number(usage.quantity)>0)branchItems.push({branch:usage.branch,code:box.code,item:itemName(item),quantity:Number(usage.quantity)});
+      })));
+      branchItems.sort((first,second)=>first.branch.localeCompare(second.branch)||first.code.localeCompare(second.code)||first.item.localeCompare(second.item));
+      branchItems.forEach((entry,index)=>{
+        const sameBox=index>0&&entry.branch===branchItems[index-1].branch&&entry.code===branchItems[index-1].code;
+        branchRows.push(['',sameBox?'':entry.code,entry.item+(entry.quantity>1?' x'+entry.quantity:''),sameBox?'':entry.branch]);
+        const next=branchItems[index+1];
+        if(!next||entry.branch!==next.branch||entry.code!==next.code)branchBoxEndRows.push(branchRows.length+1);
       });
       const balanceGroups={};
       sortedBoxes().forEach(box=>box.items.filter(item=>item.availableQty>0).forEach(item=>{
@@ -136,7 +140,7 @@
       Object.keys(balanceGroups).sort((a,b)=>a.localeCompare(b)).forEach(product=>{
         balanceTitleRows.push(balanceData.length);balanceData.push(['',product]);
         balanceHeaderRows.push(balanceData.length);balanceData.push(['','Balance Stock','Quantity','From Code']);
-        balanceGroups[product].forEach(item=>{balanceItemRows.push(balanceData.length);balanceData.push(['',item.size||product,item.quantity+' unit'+(item.quantity===1?'':'s'),item.code]);});
+        balanceGroups[product].sort((first,second)=>String(first.size).localeCompare(String(second.size),undefined,{numeric:true})||first.code.localeCompare(second.code)).forEach(item=>{balanceItemRows.push(balanceData.length);balanceData.push(['',item.size||product,item.quantity+' unit'+(item.quantity===1?'':'s'),item.code]);});
         balanceData.push([]);
       });
       const branchSheet=XLSX.utils.aoa_to_sheet([[],['','CODE','ITEM','INSTALLATION'],...branchRows]);
