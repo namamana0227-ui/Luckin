@@ -119,16 +119,19 @@
     function exportCsv(){
       if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
       const itemName=item=>item.product_name+(item.size?' '+item.size:'');
-      const branchRows=[],branchBoxEndRows=[],branchTitleRows=[];
-      const branchBoxes=sortedBoxes().map(box=>({box,branch:[...new Set(box.items.flatMap(item=>(item.luckin_item_usages||[]).map(usage=>usage.branch).filter(Boolean)))].join(', ')||'Not used'})).sort((first,second)=>first.branch.localeCompare(second.branch)||first.box.code.localeCompare(second.box.code));
-      let currentBranch='';
-      branchBoxes.forEach(({box,branch},boxIndex)=>{
-        if(branch!==currentBranch){currentBranch=branch;branchTitleRows.push(branchRows.length+2);branchRows.push(['','BRANCH: '+branch,'','']);}
-        box.items.forEach((item,index)=>{
-          const branches=[...new Set((item.luckin_item_usages||[]).map(usage=>usage.branch).filter(Boolean))];
-          branchRows.push(['',index===0?box.code:'',itemName(item),index===0?branch:branches.join(', ')]);
+      const branchRows=[],branchBoxEndRows=[],branchTitleRows=[],branchGroups={};
+      const addToBranch=(branch,box,item,quantity)=>{if(!branchGroups[branch])branchGroups[branch]=[];branchGroups[branch].push({code:box.code,item:itemName(item),quantity});};
+      sortedBoxes().forEach(box=>box.items.forEach(item=>{
+        (item.luckin_item_usages||[]).forEach(usage=>{if(usage.branch&&Number(usage.quantity)>0)addToBranch(usage.branch,box,item,Number(usage.quantity));});
+        if(item.availableQty>0)addToBranch('Available stock (not used)',box,item,item.availableQty);
+      }));
+      Object.keys(branchGroups).sort((first,second)=>first.localeCompare(second)).forEach(branch=>{
+        branchTitleRows.push(branchRows.length+2);branchRows.push(['','BRANCH: '+branch,'','']);
+        const entries=branchGroups[branch].sort((first,second)=>first.code.localeCompare(second.code)||first.item.localeCompare(second.item));
+        entries.forEach((entry,index)=>{
+          branchRows.push(['',index===0||entry.code!==entries[index-1].code?entry.code:'',entry.item+' ('+entry.quantity+' unit'+(entry.quantity===1?'':'s')+')',branch]);
+          if(index===entries.length-1||entry.code!==entries[index+1].code)branchBoxEndRows.push(branchRows.length+1);
         });
-        if(box.items.length)branchBoxEndRows.push(branchRows.length+1);
       });
       const balanceGroups={};
       sortedBoxes().forEach(box=>box.items.filter(item=>item.availableQty>0).forEach(item=>{
