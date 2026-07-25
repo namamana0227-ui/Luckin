@@ -119,19 +119,13 @@
     function exportCsv(){
       if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
       const itemName=item=>item.product_name+(item.size?' '+item.size:'');
-      const branchRows=[],branchBoxEndRows=[],branchTitleRows=[],branchGroups={};
-      const addToBranch=(branch,box,item,quantity)=>{if(!branchGroups[branch])branchGroups[branch]=[];branchGroups[branch].push({code:box.code,item:itemName(item),quantity});};
-      sortedBoxes().forEach(box=>box.items.forEach(item=>{
-        (item.luckin_item_usages||[]).forEach(usage=>{if(usage.branch&&Number(usage.quantity)>0)addToBranch(usage.branch,box,item,Number(usage.quantity));});
-        if(item.availableQty>0)addToBranch('Available stock (not used)',box,item,item.availableQty);
-      }));
-      Object.keys(branchGroups).sort((first,second)=>first.localeCompare(second)).forEach(branch=>{
-        branchTitleRows.push(branchRows.length+2);branchRows.push(['','BRANCH: '+branch,'','']);
-        const entries=branchGroups[branch].sort((first,second)=>first.code.localeCompare(second.code)||first.item.localeCompare(second.item));
-        entries.forEach((entry,index)=>{
-          branchRows.push(['',index===0||entry.code!==entries[index-1].code?entry.code:'',entry.item+' ('+entry.quantity+' unit'+(entry.quantity===1?'':'s')+')',branch]);
-          if(index===entries.length-1||entry.code!==entries[index+1].code)branchBoxEndRows.push(branchRows.length+1);
+      const branchRows=[],branchBoxEndRows=[];
+      sortedBoxes().forEach(box=>{
+        box.items.forEach((item,index)=>{
+          const branches=[...new Set((item.luckin_item_usages||[]).map(usage=>usage.branch).filter(Boolean))];
+          branchRows.push(['',index===0?box.code:'',itemName(item),index===0?branches.join(', '):'']);
         });
+        if(box.items.length)branchBoxEndRows.push(branchRows.length+1);
       });
       const balanceGroups={};
       sortedBoxes().forEach(box=>box.items.filter(item=>item.availableQty>0).forEach(item=>{
@@ -162,13 +156,8 @@
       }
       branchBoxEndRows.forEach(row=>{for(let column=1;column<=3;column++){
         const cell=branchSheet[XLSX.utils.encode_cell({r:row,c:column})];
-        if(cell)cell.s={...cell.s,border:{...border,bottom:{style:'thin',color:{rgb:'808080'}}}};
+        if(cell)cell.s={...cell.s,border:{...border,bottom:{style:'medium',color:{rgb:'404040'}}}};
       }});
-      branchTitleRows.forEach(row=>{for(let column=1;column<=3;column++){
-        const cell=branchSheet[XLSX.utils.encode_cell({r:row,c:column})];
-        if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'F2F2F2'}},alignment:{vertical:'center'},border:{...border,top:{style:'medium',color:{rgb:'404040'}},bottom:{style:'medium',color:{rgb:'404040'}}}};
-      }});
-      branchSheet['!merges']=branchTitleRows.map(row=>XLSX.utils.decode_range('B'+(row+1)+':D'+(row+1)));
       balanceTitleRows.forEach(row=>{const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:1})];if(cell)cell.s={font:{bold:true,sz:13,color:{rgb:'000000'}},alignment:{vertical:'center'}};});
       balanceHeaderRows.forEach(row=>{for(let column=1;column<=3;column++){const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'FFC000'}},alignment:{horizontal:'center',vertical:'center'},border};}});
       balanceItemRows.forEach(row=>{for(let column=1;column<=3;column++){const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};}});
