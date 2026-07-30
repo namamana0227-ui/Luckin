@@ -15,10 +15,12 @@
     .item label{font-size:11px}.remove{width:38px;height:40px;margin:0;border:0;border-radius:7px;background:#f8ddd1;color:#8a3515;font-size:18px;cursor:pointer}.add{width:auto;margin-top:11px;border:1px dashed #c86b3d;border-radius:7px;background:#fff7f1;color:#8a3515;padding:10px 12px;font-weight:800;cursor:pointer}
     .save{width:100%;margin-top:22px;border:0;border-radius:7px;background:var(--orange);color:#fff;padding:12px;font-weight:800;font-size:14px;cursor:pointer}.hidden{display:none}.success{text-align:center;padding:25px}.success h2{margin:0 0 7px}
     @media(max-width:560px){.card{padding:18px}.item{grid-template-columns:1fr 1fr 38px}.item .product-field{grid-column:1/-1}.item .quantity-field{grid-column:1/3}.item .remove{grid-column:3}}
+    .bar{padding-top:10px;padding-bottom:10px}.bar-logo{display:block;width:155px;height:auto;background:#fff;border-radius:6px;padding:4px}.bar small{display:block;font-size:11px;letter-spacing:1px;margin-top:4px}
   </style>
 </head>
 <body>
   <header class="bar">LUCKIN · Stock Update</header>
+  <script>document.addEventListener('DOMContentLoaded',()=>{document.querySelector('.bar').innerHTML='<img class="bar-logo" src="signmastr-logo.png" alt="SIGNMASTR"><small>LUCKIN STOCK UPDATE</small>';});</script>
   <main class="page">
     <section class="card" id="formCard">
       <h1>Update Luckin stock</h1>
@@ -26,7 +28,8 @@
       <div class="notice">For a received box, enter the box code once. Add every product inside that box below.</div>
       <form id="form">
         <div id="receiveFields">
-          <div class="field"><label for="code">Box code</label><input id="code" placeholder="Example: S01-19"></div>
+          <div class="field"><label for="code">Box code</label><input id="code" placeholder="Example: E01-1, S01-1, L01-1, or MY0103"></div>
+          <div class="field"><label for="batchTotal">Total boxes in this batch</label><input id="batchTotal" type="number" min="1" value="7"><small id="batchHelp">For E, S, and L, enter the actual number of boxes received in this batch.</small></div>
           <div class="field"><label>Products inside this box</label><div class="items" id="items"></div><button class="add" type="button" id="addItem">+ Add another product</button></div>
         </div>
         <div class="field"><label for="notes">Notes</label><textarea id="notes" placeholder="Optional delivery or installation notes."></textarea></div>
@@ -55,19 +58,38 @@
         quantity:Number(row.querySelector('.quantity').value)
       })).filter(item=>item.product_name||item.size||item.quantity!==1);
     }
+    function batchDetails(boxCode){
+      const normalized=boxCode.trim().toUpperCase();
+      if(normalized.startsWith('MY'))return {code:normalized,type:'MY',isMy:true};
+      const type=['E','S','L'].includes(normalized.charAt(0))?normalized.charAt(0):'OTHER';
+      return {code:normalized.replace(/-[0-9]+$/,''),type,isMy:false};
+    }
+    async function updateBatchHelp(){
+      const boxCode=document.getElementById('code').value.trim();
+      const totalInput=document.getElementById('batchTotal'),help=document.getElementById('batchHelp');
+      if(!boxCode){totalInput.disabled=false;help.textContent='For E, S, and L, enter the actual number of boxes received in this batch.';return;}
+      const batch=batchDetails(boxCode);
+      if(batch.isMy){totalInput.value=1;totalInput.disabled=true;help.textContent='MY is one direct branch record. Its branch is automatically set to '+batch.code+'.';return;}
+      totalInput.disabled=false;help.textContent='Batch '+batch.code+' ('+batch.type+'). Enter the actual total number of boxes received.';
+      const result=await database.from('luckin_boxes').select('batch_total_boxes').eq('batch_code',batch.code).limit(1);
+      if(!result.error&&result.data&&result.data[0]&&Number(result.data[0].batch_total_boxes)>0){totalInput.value=result.data[0].batch_total_boxes;help.textContent='Batch '+batch.code+' already uses '+totalInput.value+' boxes. Keep the same total for this batch.';}
+    }
     document.getElementById('addItem').onclick=addItem;
+    document.getElementById('code').addEventListener('change',updateBatchHelp);
+    document.getElementById('code').addEventListener('blur',updateBatchHelp);
     document.getElementById('form').onsubmit=async event=>{
       event.preventDefault();
       const button=document.getElementById('submit');button.disabled=true;button.textContent='Saving...';
       let error;
       const boxCode=document.getElementById('code').value.trim();
+      const batch=batchDetails(boxCode),batchTotal=Number(document.getElementById('batchTotal').value);
       const notes=document.getElementById('notes').value.trim();
       const items=getItems();
-      if(!boxCode||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
+      if(!boxCode||!Number.isInteger(batchTotal)||batchTotal<1||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
         alert('Enter the box code, then complete Product name, Size, and Qty for every product.');
         button.disabled=false;button.textContent='Save stock update';return;
       }
-      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes}).select('id').single();
+      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes,batch_code:batch.code,batch_type:batch.type,batch_total_boxes:batchTotal,branch:batch.isMy?batch.code:''}).select('id').single();
       error=boxError;
       if(!error)({error}=await database.from('luckin_box_items').insert(items.map(item=>({...item,box_id:box.id}))));
       if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return;}
