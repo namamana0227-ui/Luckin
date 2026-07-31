@@ -238,5 +238,82 @@
     document.getElementById('stockDetailTitle').textContent=title;document.getElementById('stockDetailContent').innerHTML=detailTable(headers,rows);document.getElementById('stockDetailModal').classList.remove('hidden');
   };
 </script>
+<script>
+  const extraMetricLabel=document.querySelector('#extraQty').previousElementSibling;
+  if(extraMetricLabel)extraMetricLabel.textContent='Extra product pieces';
+</script>
+<script>
+  let managedProductTypes=[];
+
+  function addManagedOptions(root=document){
+    root.querySelectorAll('select.edit-product').forEach(select=>{
+      select.querySelectorAll('.managed-product-type').forEach(option=>option.remove());
+      const other=select.querySelector('option[value="__other__"]');
+      managedProductTypes.forEach(item=>{
+        if([...select.options].some(option=>option.value===item.name))return;
+        const option=document.createElement('option');
+        option.value=item.name;option.textContent=item.name;option.className='managed-product-type';
+        select.insertBefore(option,other);
+      });
+    });
+  }
+
+  async function loadManagedProductTypes(){
+    const {data,error}=await database.from('luckin_product_types').select('id,name').order('name');
+    if(error)return;
+    managedProductTypes=data||[];
+    addManagedOptions();
+    if(!document.getElementById('productTypeModal').classList.contains('hidden'))renderProductTypes();
+  }
+
+  function productTypeModal(){
+    const modal=document.createElement('div');
+    modal.id='productTypeModal';modal.className='modal-wrap hidden';
+    modal.innerHTML='<div class="modal"><div class="modal-top"><h2>Manage product types</h2><button class="close" type="button">×</button></div><p class="muted">These product choices appear in Receive Stock and Edit Box Record on every phone.</p><form id="addProductTypeForm" class="field"><label for="newProductType">New product type</label><div style="display:flex;gap:8px"><input id="newProductType" required placeholder="Type a product name" style="flex:1"><button class="small" type="submit">Add</button></div></form><div id="managedProductTypeRows" class="edit-items"></div><button class="save" id="saveProductTypes" type="button">Save name changes</button></div>';
+    modal.querySelector('.close').onclick=()=>modal.classList.add('hidden');
+    modal.querySelector('#addProductTypeForm').onsubmit=addProductType;
+    modal.querySelector('#saveProductTypes').onclick=saveProductTypeChanges;
+    document.body.appendChild(modal);
+  }
+
+  function renderProductTypes(){
+    const holder=document.getElementById('managedProductTypeRows');
+    holder.innerHTML='';
+    if(!managedProductTypes.length){holder.innerHTML='<p class="muted">No extra product types added yet. The original product choices are still available.</p>';return;}
+    managedProductTypes.forEach(item=>{
+      const row=document.createElement('div');row.className='edit-item';row.style.gridTemplateColumns='1fr auto';row.dataset.id=item.id;
+      const input=document.createElement('input');input.value=item.name;input.className='managed-product-name';
+      const remove=document.createElement('button');remove.type='button';remove.className='edit-remove';remove.textContent='Remove';remove.onclick=()=>removeProductType(item.id,item.name);
+      row.append(input,remove);holder.appendChild(row);
+    });
+  }
+
+  async function addProductType(event){
+    event.preventDefault();const input=document.getElementById('newProductType'),name=input.value.trim();
+    if(!name)return;
+    const {error}=await database.from('luckin_product_types').insert({name});
+    if(error){alert(error.code==='23505'?'This product type already exists.':error.message);return;}
+    input.value='';await loadManagedProductTypes();
+  }
+
+  async function saveProductTypeChanges(){
+    const rows=[...document.querySelectorAll('#managedProductTypeRows .edit-item')];
+    for(const row of rows){const name=row.querySelector('.managed-product-name').value.trim();if(!name){alert('Product type name cannot be empty.');return;}const {error}=await database.from('luckin_product_types').update({name}).eq('id',row.dataset.id);if(error){alert(error.code==='23505'?'Each product type name must be different.':error.message);return;}}
+    await loadManagedProductTypes();alert('Product types updated.');
+  }
+
+  async function removeProductType(id,name){
+    if(!confirm('Remove "'+name+'" from future product choices? Existing stock records will not be deleted.'))return;
+    const {error}=await database.from('luckin_product_types').delete().eq('id',id);
+    if(error){alert(error.message);return;}await loadManagedProductTypes();
+  }
+
+  window.openProductTypeManager=async()=>{document.getElementById('productTypeModal').classList.remove('hidden');await loadManagedProductTypes();renderProductTypes();};
+  productTypeModal();
+  const productHeader=document.querySelector('#products-view .section-head');
+  if(productHeader){const button=document.createElement('button');button.id='manageProductTypes';button.className='small';button.type='button';button.textContent='Manage product types';button.onclick=openProductTypeManager;productHeader.appendChild(button);}
+  new MutationObserver(()=>addManagedOptions(document.getElementById('editItems'))).observe(document.getElementById('editItems'),{childList:true});
+  loadManagedProductTypes();
+</script>
 </body>
 </html>
