@@ -68,10 +68,17 @@
       const rows=sortedBoxes();
       document.getElementById('boxRows').innerHTML=rows.length?rows.map(box=>'<tr><td class="name">'+escape(box.code)+'</td><td>'+itemsHtml(box.items)+'</td><td>'+escape(box.receivedAt)+'</td><td>'+badge(box.status)+'</td><td>'+escape(box.branch||'—')+'</td><td><div class="actions">'+(box.items.some(item=>item.availableQty>0)?'<button class="small" onclick="useBox('+box.id+')">Use product</button>':'')+'<button class="small" onclick="editBox('+box.id+')">Edit</button><button class="small reject" onclick="deleteBox('+box.id+')">Delete</button></div></td></tr>').join(''):'<tr><td colspan="6" class="muted">No boxes recorded yet.</td></tr>';
     }
+    function compareProductAndSize(first,second){
+      const nameCompare=String(first.product||first.name||'').localeCompare(String(second.product||second.name||''));
+      if(nameCompare)return nameCompare;
+      const sizeNumber=value=>{const match=String(value||'').match(/\d+(?:\.\d+)?/);return match?Number(match[0]):Number.MAX_SAFE_INTEGER;};
+      const sizeCompare=sizeNumber(first.size)-sizeNumber(second.size);
+      return sizeCompare||String(first.size||'').localeCompare(String(second.size||''),undefined,{numeric:true});
+    }
     function renderProducts(){
       const groups={};
       boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name+'|'+item.size;if(!groups[key])groups[key]={product:item.product_name,size:item.size,total:0,used:0};groups[key].total+=Number(item.quantity)||0;groups[key].used+=Number(item.usedQty)||0;}));
-      const rows=Object.values(groups).sort((a,b)=>a.product.localeCompare(b.product)||a.size.localeCompare(b.size));
+      const rows=Object.values(groups).sort(compareProductAndSize);
       document.getElementById('productRows').innerHTML=rows.length?rows.map(item=>'<tr><td class="name">'+escape(item.product)+'</td><td>'+escape(item.size)+'</td><td>'+item.total+'</td><td>'+item.used+'</td><td>'+Math.max(0,item.total-item.used)+'</td></tr>').join(''):'<tr><td colspan="5" class="muted">No products recorded yet.</td></tr>';
     }
     function stockMovementRows(){
@@ -84,7 +91,7 @@
     function productSummaryRows(){
       const groups={};
       boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name+'|'+item.size;if(!groups[key])groups[key]={product:item.product_name,size:item.size,total:0,used:0};groups[key].total+=Number(item.quantity)||0;groups[key].used+=Number(item.usedQty)||0;}));
-      return Object.values(groups).sort((a,b)=>a.product.localeCompare(b.product)||a.size.localeCompare(b.size));
+      return Object.values(groups).sort(compareProductAndSize);
     }
     function renderAll(){renderDashboard();renderBoxes();renderProducts();renderMovements();}
     let selectedBox;
@@ -213,7 +220,7 @@
       if(type==='available'){title='Available boxes';headers=['Box code','Batch','Available quantity'];rows=boxes.filter(box=>box.items.some(item=>item.availableQty>0)).map(box=>[escape(box.code),escape(inferredBatch(box).batchCode),box.items.reduce((sum,item)=>sum+Number(item.availableQty||0),0)]);}
       else if(type==='complete'){title='Complete batches';headers=['Type','Batch code','Boxes','Available quantity'];rows=groups.filter(group=>group.isComplete).map(group=>[escape(group.type),escape(group.batchCode),group.boxes.length+' / '+group.totalBoxes,group.availableQty]);}
       else if(type==='extra'){title='Extra stock';headers=['Box code','Product','Size','Extra quantity'];rows=groups.filter(group=>group.usedQty>0).flatMap(group=>group.boxes.flatMap(box=>box.items.filter(item=>item.availableQty>0).map(item=>[escape(box.code),escape(item.product_name),escape(item.size||'—'),item.availableQty])));}
-      else if(type==='products'){title='Product types';headers=['Product name','Size','Available quantity'];const products={};boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name+'|'+item.size;if(!products[key])products[key]={name:item.product_name,size:item.size,quantity:0};products[key].quantity+=Number(item.availableQty)||0;}));rows=Object.values(products).sort((first,second)=>first.name.localeCompare(second.name)).map(item=>[escape(item.name),escape(item.size||'—'),item.quantity]);}
+      else if(type==='products'){title='Product types';headers=['Product name','Size','Available quantity'];const products={};boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name+'|'+item.size;if(!products[key])products[key]={name:item.product_name,size:item.size,quantity:0};products[key].quantity+=Number(item.availableQty)||0;}));rows=Object.values(products).sort(compareProductAndSize).map(item=>[escape(item.name),escape(item.size||'—'),item.quantity]);}
       else {const batchType=type.replace('batch-','');title='Complete '+batchType+' batches';headers=['Batch code','Boxes','Available quantity'];rows=groups.filter(group=>group.type===batchType&&group.isComplete).map(group=>[escape(group.batchCode),group.boxes.length+' / '+group.totalBoxes,group.availableQty]);}
       document.getElementById('stockDetailTitle').textContent=title;document.getElementById('stockDetailContent').innerHTML=detailTable(headers,rows);document.getElementById('stockDetailModal').classList.remove('hidden');
     };
@@ -233,7 +240,7 @@
     if(type==='available'){title='Available boxes';headers=['Box code','Batch','Available quantity'];rows=boxes.filter(box=>box.items.some(item=>item.availableQty>0)).map(box=>[escape(box.code),escape(inferredBatch(box).batchCode),box.items.reduce((sum,item)=>sum+Number(item.availableQty||0),0)]);}
     else if(type==='complete'){title='Complete batches';headers=['Type','Batch code','Boxes','Available quantity'];rows=groups.filter(group=>group.isComplete).map(group=>[escape(group.type),escape(group.batchCode),group.boxes.length+' / '+group.totalBoxes,group.availableQty]);}
     else if(type==='extra'){title='Extra stock';headers=['Box code','Product','Size','Extra quantity'];rows=groups.filter(group=>group.isExtra).flatMap(group=>group.boxes.flatMap(box=>box.items.filter(item=>item.availableQty>0).map(item=>[escape(box.code),escape(item.product_name),escape(item.size||'&mdash;'),item.availableQty])));}
-    else if(type==='products'){title='Product types';headers=['Product name','Size','Available quantity'];const products={};boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name+'|'+item.size;if(!products[key])products[key]={name:item.product_name,size:item.size,quantity:0};products[key].quantity+=Number(item.availableQty)||0;}));rows=Object.values(products).sort((first,second)=>first.name.localeCompare(second.name)).map(item=>[escape(item.name),escape(item.size||'&mdash;'),item.quantity]);}
+    else if(type==='products'){title='Product types';headers=['Product name','Size','Available quantity'];const products={};boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name+'|'+item.size;if(!products[key])products[key]={name:item.product_name,size:item.size,quantity:0};products[key].quantity+=Number(item.availableQty)||0;}));rows=Object.values(products).sort(compareProductAndSize).map(item=>[escape(item.name),escape(item.size||'&mdash;'),item.quantity]);}
     else {const batchType=type.replace('batch-','');title='Complete '+batchType+' batches';headers=['Batch code','Boxes','Available quantity'];rows=groups.filter(group=>group.type===batchType&&group.isComplete).map(group=>[escape(group.batchCode),group.boxes.length+' / '+group.totalBoxes,group.availableQty]);}
     document.getElementById('stockDetailTitle').textContent=title;document.getElementById('stockDetailContent').innerHTML=detailTable(headers,rows);document.getElementById('stockDetailModal').classList.remove('hidden');
   };
