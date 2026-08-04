@@ -69,7 +69,7 @@
       const totalInput=document.getElementById('batchTotal'),help=document.getElementById('batchHelp');
       if(!boxCode){totalInput.disabled=false;help.textContent='For E, S, and L, enter the actual number of boxes received in this batch.';return;}
       const batch=batchDetails(boxCode);
-      if(batch.isMy){totalInput.value=1;totalInput.disabled=true;help.textContent='MY is one direct branch record. Its branch is automatically set to '+batch.code+'.';return;}
+      if(batch.isMy){totalInput.value=1;totalInput.disabled=true;help.textContent='MY is recorded as one box. Record the branch only when you use a product.';return;}
       totalInput.disabled=false;help.textContent='Batch '+batch.code+' ('+batch.type+'). Enter the actual total number of boxes received.';
       const result=await database.from('luckin_boxes').select('batch_total_boxes').eq('batch_code',batch.code).limit(1);
       if(!result.error&&result.data&&result.data[0]&&Number(result.data[0].batch_total_boxes)>0){totalInput.value=result.data[0].batch_total_boxes;help.textContent='Batch '+batch.code+' already uses '+totalInput.value+' boxes. Keep the same total for this batch.';}
@@ -89,13 +89,33 @@
         alert('Enter the box code, then complete Product name, Size, and Qty for every product.');
         button.disabled=false;button.textContent='Save stock update';return;
       }
-      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes,batch_code:batch.code,batch_type:batch.type,batch_total_boxes:batchTotal,branch:batch.isMy?batch.code:''}).select('id').single();
+      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes,batch_code:batch.code,batch_type:batch.type,batch_total_boxes:batchTotal,branch:''}).select('id').single();
       error=boxError;
       if(!error)({error}=await database.from('luckin_box_items').insert(items.map(item=>({...item,box_id:box.id}))));
       if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return;}
       document.getElementById('formCard').classList.add('hidden');document.getElementById('success').classList.remove('hidden');
     };
     addItem();
-  </script>
+</script>
+<script>
+  let managedProductTypes=[];
+  function addManagedOptionsToReceiveForm(){
+    document.querySelectorAll('select.product').forEach(select=>{
+      select.querySelectorAll('.managed-product-type').forEach(option=>option.remove());
+      const other=select.querySelector('option[value="__other__"]');
+      managedProductTypes.forEach(item=>{
+        if([...select.options].some(option=>option.value===item.name))return;
+        const option=document.createElement('option');option.value=item.name;option.textContent=item.name;option.className='managed-product-type';select.insertBefore(option,other);
+      });
+    });
+  }
+  async function loadManagedProductTypesForReceive(){
+    const {data,error}=await database.from('luckin_product_types').select('name').order('name');
+    if(error)return;
+    managedProductTypes=data||[];addManagedOptionsToReceiveForm();
+  }
+  new MutationObserver(addManagedOptionsToReceiveForm).observe(document.getElementById('items'),{childList:true});
+  loadManagedProductTypesForReceive();
+</script>
 </body>
 </html>
