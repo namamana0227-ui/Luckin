@@ -30,6 +30,7 @@
         <div id="receiveFields">
           <div class="field"><label for="code">Box code</label><input id="code" placeholder="Example: E01-1, S01-1, L01-1, or MY0103"></div>
           <div class="field"><label for="batchTotal">Total boxes in this batch</label><input id="batchTotal" type="number" min="1" value="7"><small id="batchHelp">For E, S, and L, enter the actual number of boxes received in this batch.</small></div>
+          <div class="field"><label for="stockGroup">Stock classification</label><select id="stockGroup"><option value="Auto">Decide automatically</option><option value="Complete">Complete stock</option><option value="Extra">Extra stock</option></select><small>Choose Extra for leftover stock. Choose Complete only when this record is confirmed as complete stock.</small></div>
           <div class="field"><label>Products inside this box</label><div class="items" id="items"></div><button class="add" type="button" id="addItem">+ Add another product</button></div>
         </div>
         <div class="field"><label for="notes">Notes</label><textarea id="notes" placeholder="Optional delivery or installation notes."></textarea></div>
@@ -83,13 +84,14 @@
       let error;
       const boxCode=document.getElementById('code').value.trim();
       const batch=batchDetails(boxCode),batchTotal=Number(document.getElementById('batchTotal').value);
+      const stockGroup=document.getElementById('stockGroup').value;
       const notes=document.getElementById('notes').value.trim();
       const items=getItems();
       if(!boxCode||!Number.isInteger(batchTotal)||batchTotal<1||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
         alert('Enter the box code, then complete Product name, Size, and Qty for every product.');
         button.disabled=false;button.textContent='Save stock update';return;
       }
-      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes,batch_code:batch.code,batch_type:batch.type,batch_total_boxes:batchTotal,branch:''}).select('id').single();
+      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes,batch_code:batch.code,batch_type:batch.type,batch_total_boxes:batchTotal,stock_group:stockGroup,branch:''}).select('id').single();
       error=boxError;
       if(!error)({error}=await database.from('luckin_box_items').insert(items.map(item=>({...item,box_id:box.id}))));
       if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return;}
