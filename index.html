@@ -3,123 +3,371 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Luckin Stock Update</title>
+  <meta name="theme-color" content="#b84a16">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <title>Luckin Stock Tracker</title>
   <style>
-    :root{--orange:#b84a16;--deep:#54200d;--paper:#fff4eb;--line:#edc7af;--muted:#815d4c}
-    *{box-sizing:border-box}body{margin:0;background:#f3c8ab;color:var(--deep);font-family:Arial,sans-serif}
-    .bar{background:var(--orange);color:#fff;padding:18px max(22px,calc((100% - 720px)/2));font-size:19px;font-weight:800}
-    .page{width:min(680px,calc(100% - 28px));margin:28px auto}.card{background:var(--paper);border:1px solid var(--line);border-radius:13px;padding:24px}
-    h1{font-size:26px;margin:0 0 7px}p{color:var(--muted);line-height:1.45}.notice{padding:11px 12px;background:#ffeadc;border-radius:7px;font-size:12px;color:#7d391d;margin:18px 0}
-    .field{display:grid;gap:6px;margin-top:15px}label{font-weight:700;font-size:13px}input,select,textarea{width:100%;border:1px solid #dba886;border-radius:7px;padding:11px;background:#fff;font:inherit;color:var(--deep)}
-    textarea{min-height:70px;resize:vertical}.items{display:grid;gap:10px;margin-top:14px}.item{display:grid;grid-template-columns:1fr 145px 88px 38px;gap:8px;align-items:end;background:#fff9f4;border:1px solid #efd2bf;border-radius:9px;padding:11px}
-    .item label{font-size:11px}.remove{width:38px;height:40px;margin:0;border:0;border-radius:7px;background:#f8ddd1;color:#8a3515;font-size:18px;cursor:pointer}.add{width:auto;margin-top:11px;border:1px dashed #c86b3d;border-radius:7px;background:#fff7f1;color:#8a3515;padding:10px 12px;font-weight:800;cursor:pointer}
-    .save{width:100%;margin-top:22px;border:0;border-radius:7px;background:var(--orange);color:#fff;padding:12px;font-weight:800;font-size:14px;cursor:pointer}.hidden{display:none}.success{text-align:center;padding:25px}.success h2{margin:0 0 7px}
-    @media(max-width:560px){.card{padding:18px}.item{grid-template-columns:1fr 1fr 38px}.item .product-field{grid-column:1/-1}.item .quantity-field{grid-column:1/3}.item .remove{grid-column:3}}
-    .bar{padding-top:10px;padding-bottom:10px}.bar-logo{display:block;width:155px;height:auto;background:#fff;border-radius:6px;padding:4px}.bar small{display:block;font-size:11px;letter-spacing:1px;margin-top:4px}
+    :root{--orange:#f89521;--deep:#1a2f3c;--paper:#fffaf4;--line:#f0cda9;--muted:#6d6259;--green:#167042}
+    *{box-sizing:border-box}body{margin:0;background:#fff0df;color:var(--deep);font-family:Arial,sans-serif}.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+    aside{background:var(--deep);color:#fff;padding:25px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;align-self:start}.brand{font-size:20px;font-weight:800;color:#fff;padding:0 10px 27px}.brand small{display:block;color:#ffc684;font-size:11px;letter-spacing:1px;text-transform:uppercase;margin-top:7px}
+    .nav{display:grid;gap:4px}.nav button,.link{border:0;background:transparent;color:#f7d9bd;text-align:left;padding:12px 10px;border-radius:7px;font:inherit;font-size:14px;cursor:pointer;text-decoration:none}.nav button:hover,.nav button.active,.link:hover{background:#f89521;color:#1a2f3c}.help{margin-top:auto;border-top:1px solid #385261;padding:16px 10px 0;font-size:12px;color:#d4e0e5}
+    main{padding:31px 38px;width:min(1450px,100%);margin:auto}.top{display:flex;justify-content:space-between;align-items:start;margin-bottom:23px}.eyebrow{font-size:11px;color:var(--orange);font-weight:800;letter-spacing:1px;text-transform:uppercase}.top h1{margin:6px 0;font-size:28px}.top p{margin:0;color:var(--muted);font-size:14px}.pill{background:var(--paper);border:1px solid var(--line);padding:10px 12px;border-radius:7px;font-size:12px}
+    .metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:22px}.metric,.card{background:var(--paper);border:1px solid var(--line);border-radius:11px}.metric{padding:17px}.metric label{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:800}.metric b{display:block;font-size:27px;margin-top:7px}.card-head{padding:18px 20px}.card-head h2{font-size:17px;margin:0}.sub{font-size:12px;color:var(--muted);margin-top:4px}.modal-wrap{position:fixed;inset:0;background:#40160688;display:grid;place-items:center;padding:18px;z-index:30;overflow-y:auto}.modal{background:var(--paper);border-radius:12px;padding:23px;width:min(480px,100%);max-height:calc(100vh - 36px);overflow-y:auto}.modal-top{display:flex;justify-content:space-between;align-items:center;position:sticky;top:-23px;z-index:2;background:var(--paper);padding:12px 0}.modal h2{margin:0;font-size:19px}.close{border:0;background:#f0d5c4;border-radius:50%;width:30px;height:30px;font-size:18px;cursor:pointer;flex:0 0 auto}.field{display:grid;gap:6px;margin-top:15px}.field label{font-size:13px;font-weight:800}.field input,.field select{border:1px solid #dba886;border-radius:7px;padding:11px;background:#fff;font:inherit;color:var(--deep)}.use-items{display:grid;gap:8px}.use-row{display:grid;grid-template-columns:1fr 92px;gap:8px;align-items:center;background:#fff9f4;border:1px solid #efd2bf;border-radius:8px;padding:9px}.use-row label{display:flex;align-items:center;gap:8px;font-size:12px}.use-row input[type="checkbox"]{width:16px;height:16px;accent-color:var(--orange)}.use-row input[type="number"]{width:100%;border:1px solid #dba886;border-radius:7px;padding:8px;background:#fff;font:inherit;color:var(--deep)}.save{width:100%;margin-top:20px;border:0;border-radius:7px;background:var(--orange);color:#fff;padding:12px;font-weight:800;font-size:14px;cursor:pointer}
+    .table{overflow:auto}table{border-collapse:collapse;width:100%;font-size:13px;background:#fff}th{text-align:left;padding:11px 16px;background:#f9eadf;color:#815d4c;font-size:10px;letter-spacing:.6px;text-transform:uppercase}td{padding:13px 16px;border-top:1px solid #f5e6dc;vertical-align:top}.name{font-weight:800}.muted{color:var(--muted);font-size:12px}.items{display:grid;gap:4px}.item{font-size:12px}.badge{font-size:10px;font-weight:800;border-radius:18px;padding:4px 7px}.available{background:#e1f5e9;color:#126b40}.used{background:#fff1d5;color:#9c5a00}.actions{display:flex;gap:6px;flex-wrap:wrap}.small{border:0;border-radius:6px;padding:8px 10px;font-weight:800;font-size:12px;cursor:pointer;background:#f7dfcf;color:#8a3515}.reject{background:#fae4e2;color:#a22c24}.hidden{display:none!important}.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:17px}.section-head h2{margin:4px 0 0;font-size:21px}.edit-items{display:grid;gap:9px;margin-top:10px}.edit-item{display:grid;grid-template-columns:1fr 105px 76px auto;gap:7px;align-items:end;background:#fff9f4;border:1px solid #efd2bf;border-radius:8px;padding:9px}.edit-item label{font-size:10px}.edit-item input,.edit-item select{width:100%;padding:9px;border:1px solid #dba886;border-radius:7px;background:#fff;font:inherit;color:var(--deep)}.edit-other{margin-top:6px}.edit-remove{border:0;border-radius:6px;background:#fae4e2;color:#a22c24;padding:9px;cursor:pointer;font-weight:800}.add-item{border:1px dashed #c86b3d;border-radius:6px;background:#fff7f1;color:#8a3515;padding:9px 11px;font-weight:800;cursor:pointer;margin-top:10px}
+    @media(max-width:900px){.app{display:block}.app aside{display:block;padding:14px 12px;position:sticky;top:0;z-index:5;height:auto;overflow:visible}.brand{padding:0 8px 12px}.nav{display:flex;gap:5px;overflow-x:auto}.nav button,.link{white-space:nowrap;padding:10px 12px}.help{display:none}main{padding:20px 14px}.top{display:block}.pill{display:inline-block;margin-top:12px}.metrics{grid-template-columns:repeat(2,1fr);gap:10px}.metric{padding:13px}.metric b{font-size:23px}}
+    .brand-logo{display:block;width:162px;height:auto;background:#fff;border-radius:6px;padding:4px}.brand{padding-bottom:22px}.brand small{margin-top:7px}
   </style>
 </head>
 <body>
-  <header class="bar">LUCKIN · Stock Update</header>
-  <script>document.addEventListener('DOMContentLoaded',()=>{document.querySelector('.bar').innerHTML='<img class="bar-logo" src="signmastr-logo.png" alt="SIGNMASTR"><small>LUCKIN STOCK UPDATE</small>';});</script>
-  <main class="page">
-    <section class="card" id="formCard">
-      <h1>Update Luckin stock</h1>
-      <p>Receive one box code with all products inside it.</p>
-      <div class="notice">For a received box, enter the box code once. Add every product inside that box below.</div>
-      <form id="form">
-        <div id="receiveFields">
-          <div class="field"><label for="code">Box code</label><input id="code" placeholder="Example: E01-1, S01-1, L01-1, or MY0103"></div>
-          <div class="field"><label for="batchTotal">Total boxes in this batch</label><input id="batchTotal" type="number" min="1" value="7"><small id="batchHelp">For E, S, and L, enter the actual number of boxes received in this batch.</small></div>
-          <div class="field"><label for="stockGroup">Stock classification</label><select id="stockGroup"><option value="Auto">Decide automatically</option><option value="Complete">Complete stock</option><option value="Extra">Extra stock</option></select><small>Choose Extra for leftover stock. Choose Complete only when this record is confirmed as complete stock.</small></div>
-          <div class="field"><label>Products inside this box</label><div class="items" id="items"></div><button class="add" type="button" id="addItem">+ Add another product</button></div>
-        </div>
-        <div class="field"><label for="notes">Notes</label><textarea id="notes" placeholder="Optional delivery or installation notes."></textarea></div>
-        <button class="save" id="submit">Save stock update</button>
-      </form>
-    </section>
-    <section class="card success hidden" id="success"><h2>✓ Stock updated</h2><p>The box record has been saved.</p><button class="save" onclick="location.reload()">Add another update</button></section>
-  </main>
+  <div class="app">
+    <aside><div class="brand"><img class="brand-logo" src="signmastr-logo.png" alt="SIGNMASTR"><small>Luckin Box Stock Tracker</small></div><nav class="nav"><button class="active" data-view="dashboard">▦ Dashboard</button><button data-view="boxes">▣ Box Register</button><button data-view="products">◷ Product Summary</button><button data-view="movements">↗ Stock Movements</button><a class="link" href="stock-update.html">↗ Update stock</a></nav><div class="help">Every box code can contain one or more product items.</div></aside>
+    <main>
+      <section id="dashboard-view"><div class="top"><div><div class="eyebrow">Stock overview</div><h1>Luckin box tracker</h1><p>Receive boxes, allocate them to branches, and check product stock.</p></div><div class="pill" id="today"></div></div><div class="metrics"><div class="metric"><label>Available boxes</label><b id="available">0</b></div><div class="metric"><label>Complete batches</label><b id="completeBatches">0</b></div><div class="metric"><label>Extra stock qty</label><b id="extraQty">0</b></div><div class="metric"><label>Product types</label><b id="productCount">0</b></div></div><div class="card" style="margin-bottom:22px"><div class="card-head"><h2>Complete batch overview</h2><div class="sub">A batch is complete only when every recorded box is available and matches its total box count.</div></div><div class="metrics" style="padding:0 20px 20px;margin:0"><div class="metric"><label>Elite (E)</label><b id="completeE">0</b></div><div class="metric"><label>Standard (S)</label><b id="completeS">0</b></div><div class="metric"><label>Leisure (L)</label><b id="completeL">0</b></div><div class="metric"><label>Special (MY)</label><b id="completeMY">0</b></div></div></div><div class="card"><div class="card-head"><h2>Latest box movements</h2><div class="sub">Each box code may contain multiple products</div></div><div class="table"><table><thead><tr><th>Box code</th><th>Products inside</th><th>Status</th><th>Branch</th></tr></thead><tbody id="recentRows"></tbody></table></div></div></section>
+<section id="boxes-view" class="hidden"><div class="section-head"><div><div class="eyebrow">All coded boxes</div><h2>Box register</h2></div><button class="small" onclick="exportCsv()">Export Excel report</button></div><div class="card"><div class="box-search-wrap"><label for="boxSearch">Find box</label><input id="boxSearch" class="box-search" placeholder="Type a box code, for example MY0149" oninput="renderBoxes()"></div><div class="table"><table><thead><tr><th>Box code</th><th>Products inside</th><th>Received</th><th>Status</th><th>Used for branch</th><th>Action</th></tr></thead><tbody id="boxRows"></tbody></table></div></div></section>
+<section id="products-view" class="hidden"><div class="section-head"><div><div class="eyebrow">Stock by product</div><h2>Product summary</h2></div><button class="small" onclick="exportProductSummary()">Export Excel report</button></div><div class="product-total-card"><span>Total extra stock</span><b id="extraProductTotal">0</b><small>available product pieces</small></div><div class="product-summary-grid"><div class="card product-panel"><div class="card-head"><h2>Extra stock</h2><div class="sub">Products from incomplete or partly used batches.</div></div><div class="table"><table><thead><tr><th>Product name</th><th>Size</th><th>Available qty</th></tr></thead><tbody id="extraProductRows"></tbody></table></div></div><div class="card product-panel"><div class="card-head"><h2>Complete stock</h2><div class="sub">Products from complete batches.</div></div><div class="table"><table><thead><tr><th>Product name</th><th>Size</th><th>Available qty</th></tr></thead><tbody id="completeProductRows"></tbody></table></div></div></div></section>
+      <section id="movements-view" class="hidden"><div class="section-head"><div><div class="eyebrow">Where stock goes</div><h2>Stock movements</h2></div></div><div class="card"><div class="card-head"><h2>Products used for Luckin branches</h2><div class="sub">Every product usage is recorded here.</div></div><div class="table"><table><thead><tr><th>Used date</th><th>Box code</th><th>Product name</th><th>Size</th><th>Qty used</th><th>Used for branch</th></tr></thead><tbody id="movementRows"></tbody></table></div></div></section>
+    </main>
+  </div>
+  <div class="modal-wrap hidden" id="useModal"><div class="modal"><div class="modal-top"><h2>Use product from box</h2><button class="close" onclick="closeUseModal()">×</button></div><p class="muted" id="useBoxCode"></p><form id="useForm"><div class="field"><label>Products to use</label><div class="use-items" id="useItems"></div></div><div class="field"><label for="useBranch">Use for Luckin branch</label><input id="useBranch" placeholder="Example: Luckin KLCC"></div><button class="save" id="useSubmit">Save product usage</button></form></div></div>
+  <div class="modal-wrap hidden" id="editModal"><div class="modal"><div class="modal-top"><h2>Edit box record</h2><button class="close" onclick="closeEditModal()">×</button></div><form id="editForm"><div class="field"><label for="editCode">Box code</label><input id="editCode" required></div><div class="field"><label for="editBatchTotal">Total boxes in this batch</label><input id="editBatchTotal" type="number" min="1" required></div><div class="field"><label for="editDate">Received date</label><input id="editDate" type="date" required></div><div class="field"><label>Products inside this box</label><div class="edit-items" id="editItems"></div><button type="button" class="add-item" onclick="addEditItem()">+ Add product</button></div><div class="field"><label for="editNotes">Notes</label><input id="editNotes" placeholder="Optional notes"></div><button class="save" id="editSubmit">Save changes</button></form></div></div>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
   <script>
     const database=supabase.createClient('https://pthvibwnyvlszmprfdit.supabase.co','sb_publishable_1UBB53SrLHpMhlrquuIOkw_4WtXsdE6');
-    const products=['吊挂','侧标','非标','背光字','灯箱','Luckin Coffee立体站式','Photo Frame','字体 1(SILVER)','字体 2(SILVER)','字体 3(SILVER)','字体 4(SILVER)','字体 5(SILVER)','字体 6(SILVER)','字体 7(SILVER)','字体 8(SILVER)','字体 9(SILVER)','PICK UP(SILVER)','NO. MY (SILVER)','字体 1(COOPER)','字体 2(COOPER)','字体 3(COOPER)','字体 4(COOPER)','字体 5(COOPER)','字体 6(COOPER)','字体 7(COOPER)','字体 8(COOPER)','字体 9(COOPER)','PICK UP(COOPER)','NO. MY (COOPER)','蓝底白鹿-正面鹿头','双面火箱古铜色','fabric lightbox','横板背架-非标Luckin Coffee'];
-    const productOptions='<option value="">Select product</option>'+products.map(product=>'<option>'+product+'</option>').join('')+'<option value="__other__">Other — type a new product</option>';
-    function addItem(){
-      const row=document.createElement('div');
-      row.className='item';
-      row.innerHTML='<div class="product-field"><label>Product name</label><select class="product">'+productOptions+'</select><input class="other-product hidden" placeholder="Type the new product name"></div><div><label>Size</label><input class="size" placeholder="Example: 600mm"></div><div class="quantity-field"><label>Qty</label><input class="quantity" type="number" min="1" value="1"></div><button type="button" class="remove" title="Remove product">×</button>';
-      row.querySelector('.product').onchange=event=>row.querySelector('.other-product').classList.toggle('hidden',event.target.value!=='__other__');
-      row.querySelector('.remove').onclick=()=>{if(document.querySelectorAll('.item').length>1)row.remove();};
-      document.getElementById('items').appendChild(row);
+    let boxes=[];
+    const escape=value=>{const node=document.createElement('div');node.textContent=value??'';return node.innerHTML};
+    const itemText=item=>escape(item.product_name)+(item.size?' · '+escape(item.size):'')+' · '+item.availableQty+'/'+item.quantity+' available';
+    const itemsHtml=items=>'<div class="items">'+items.map(item=>'<div class="item">'+itemText(item)+'</div>').join('')+'</div>';
+    const badge=status=>'<span class="badge '+status.toLowerCase()+'">'+status+'</span>';
+    document.getElementById('today').textContent=new Date().toLocaleDateString('en-MY',{day:'numeric',month:'long',year:'numeric'});
+    function sortedBoxes(){return [...boxes].sort((a,b)=>a.code.localeCompare(b.code,undefined,{numeric:true,sensitivity:'base'}));}
+    function inferredBatch(box){
+      const code=String(box.code||'').trim().toUpperCase();
+      const type=box.batchType||(/^(MY)/.test(code)?'MY':(/^[ESL]/.test(code)?code.charAt(0):'OTHER'));
+      const batchCode=box.batchCode||(type==='MY'?code:code.replace(/-[0-9]+$/,''));
+      return {type,batchCode,totalBoxes:Number(box.batchTotalBoxes)||1};
     }
-    function getItems(){
-      return [...document.querySelectorAll('.item')].map(row=>({
-        product_name:row.querySelector('.product').value==='__other__'?row.querySelector('.other-product').value.trim():row.querySelector('.product').value,
-        size:row.querySelector('.size').value.trim(),
-        quantity:Number(row.querySelector('.quantity').value)
-      })).filter(item=>item.product_name||item.size||item.quantity!==1);
+    function batchOverview(){
+      const groups={};
+      boxes.forEach(box=>{const batch=inferredBatch(box),key=batch.type+'|'+batch.batchCode;if(!groups[key])groups[key]={...batch,boxes:[],availableQty:0,usedQty:0};groups[key].boxes.push(box);box.items.forEach(item=>{groups[key].availableQty+=Number(item.availableQty)||0;groups[key].usedQty+=Number(item.usedQty)||0;});});
+      const complete={E:0,S:0,L:0,MY:0},extraQty={E:0,S:0,L:0,MY:0,OTHER:0};
+      Object.values(groups).forEach(group=>{const isComplete=group.boxes.length>=group.totalBoxes&&group.usedQty===0&&group.availableQty>0;if(isComplete&&complete[group.type]!==undefined)complete[group.type]++;if(group.usedQty>0)extraQty[group.type]=(extraQty[group.type]||0)+group.availableQty;});
+      return {complete,extraQty:Object.values(extraQty).reduce((sum,value)=>sum+value,0)};
     }
-    function batchDetails(boxCode){
-      const normalized=boxCode.trim().toUpperCase();
-      if(normalized.startsWith('MY'))return {code:normalized,type:'MY',isMy:true};
-      const type=['E','S','L'].includes(normalized.charAt(0))?normalized.charAt(0):'OTHER';
-      return {code:normalized.replace(/-[0-9]+$/,''),type,isMy:false};
+    function renderDashboard(){
+      const available=boxes.filter(box=>box.items.some(item=>item.availableQty>0));
+      const productNames=new Set(boxes.flatMap(box=>box.items.map(item=>item.product_name)));
+      const overview=batchOverview();
+      document.getElementById('available').textContent=available.length;document.getElementById('completeBatches').textContent=Object.values(overview.complete).reduce((sum,value)=>sum+value,0);document.getElementById('extraQty').textContent=overview.extraQty;document.getElementById('productCount').textContent=productNames.size;
+      document.getElementById('completeE').textContent=overview.complete.E;document.getElementById('completeS').textContent=overview.complete.S;document.getElementById('completeL').textContent=overview.complete.L;document.getElementById('completeMY').textContent=overview.complete.MY;
+      const rows=[...boxes].sort((a,b)=>new Date(b.receivedAt)-new Date(a.receivedAt)).slice(0,8);
+      document.getElementById('recentRows').innerHTML=rows.length?rows.map(box=>'<tr><td class="name">'+escape(box.code)+'</td><td>'+itemsHtml(box.items)+'</td><td>'+badge(box.status)+'</td><td>'+escape(box.branch||'—')+'</td></tr>').join(''):'<tr><td colspan="4" class="muted">No boxes recorded yet. Use Update stock to receive your first box.</td></tr>';
     }
-    async function updateBatchHelp(){
-      const boxCode=document.getElementById('code').value.trim();
-      const totalInput=document.getElementById('batchTotal'),help=document.getElementById('batchHelp');
-      if(!boxCode){totalInput.disabled=false;help.textContent='For E, S, and L, enter the actual number of boxes received in this batch.';return;}
-      const batch=batchDetails(boxCode);
-      if(batch.isMy){totalInput.value=1;totalInput.disabled=true;help.textContent='MY is recorded as one box. Record the branch only when you use a product.';return;}
-      totalInput.disabled=false;help.textContent='Batch '+batch.code+' ('+batch.type+'). Enter the actual total number of boxes received.';
-      const result=await database.from('luckin_boxes').select('batch_total_boxes').eq('batch_code',batch.code).limit(1);
-      if(!result.error&&result.data&&result.data[0]&&Number(result.data[0].batch_total_boxes)>0){totalInput.value=result.data[0].batch_total_boxes;help.textContent='Batch '+batch.code+' already uses '+totalInput.value+' boxes. Keep the same total for this batch.';}
+    function renderBoxes(){
+      const search=String(document.getElementById('boxSearch')?.value||'').trim().toLowerCase(),rows=sortedBoxes().filter(box=>!search||String(box.code||'').toLowerCase().includes(search));
+      document.getElementById('boxRows').innerHTML=rows.length?rows.map(box=>'<tr><td class="name">'+escape(box.code)+'</td><td>'+itemsHtml(box.items)+'</td><td>'+escape(box.receivedAt)+'</td><td>'+badge(box.status)+'</td><td>'+escape(box.branch||'—')+'</td><td><div class="actions">'+(box.items.some(item=>item.availableQty>0)?'<button class="small" onclick="useBox('+box.id+')">Use product</button>':'')+'<button class="small" onclick="editBox('+box.id+')">Edit</button><button class="small reject" onclick="deleteBox('+box.id+')">Delete</button></div></td></tr>').join(''):'<tr><td colspan="6" class="muted">No boxes recorded yet.</td></tr>';
     }
-    document.getElementById('addItem').onclick=addItem;
-    document.getElementById('code').addEventListener('change',updateBatchHelp);
-    document.getElementById('code').addEventListener('blur',updateBatchHelp);
-    document.getElementById('form').onsubmit=async event=>{
-      event.preventDefault();
-      const button=document.getElementById('submit');button.disabled=true;button.textContent='Saving...';
-      let error;
-      const boxCode=document.getElementById('code').value.trim();
-      const batch=batchDetails(boxCode),batchTotal=Number(document.getElementById('batchTotal').value);
-      const stockGroup=document.getElementById('stockGroup').value;
-      const notes=document.getElementById('notes').value.trim();
-      const items=getItems();
-      if(!boxCode||!Number.isInteger(batchTotal)||batchTotal<1||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<1)){
-        alert('Enter the box code, then complete Product name, Size, and Qty for every product.');
-        button.disabled=false;button.textContent='Save stock update';return;
-      }
-      const {data:box,error:boxError}=await database.from('luckin_boxes').insert({box_code:boxCode,product_name:items[0].product_name,size:items[0].size,notes,batch_code:batch.code,batch_type:batch.type,batch_total_boxes:batchTotal,stock_group:stockGroup,branch:''}).select('id').single();
-      error=boxError;
-      if(!error)({error}=await database.from('luckin_box_items').insert(items.map(item=>({...item,box_id:box.id}))));
-      if(error){alert(error.message);button.disabled=false;button.textContent='Save stock update';return;}
-      document.getElementById('formCard').classList.add('hidden');document.getElementById('success').classList.remove('hidden');
+    function compareProductAndSize(first,second){
+      const nameCompare=String(first.product||first.name||'').localeCompare(String(second.product||second.name||''));
+      if(nameCompare)return nameCompare;
+      const sizeNumber=value=>{const match=String(value||'').match(/\d+(?:\.\d+)?/);return match?Number(match[0]):Number.MAX_SAFE_INTEGER;};
+      const sizeCompare=sizeNumber(first.size)-sizeNumber(second.size);
+      return sizeCompare||String(first.size||'').localeCompare(String(second.size||''),undefined,{numeric:true});
+    }
+    function renderProducts(){
+      const extra={},complete={};
+      const addItem=(target,item)=>{if(!item.availableQty)return;const key=item.product_name+'|'+item.size;if(!target[key])target[key]={product:item.product_name,size:item.size,quantity:0};target[key].quantity+=Number(item.availableQty)||0;};
+      const groups=typeof classifiedBatchGroups==='function'?classifiedBatchGroups():[];
+      groups.forEach(group=>group.boxes.forEach(box=>box.items.forEach(item=>{if(group.isExtra)addItem(extra,item);if(group.isComplete)addItem(complete,item);}))); 
+      const renderRows=(target,items)=>document.getElementById(target).innerHTML=items.length?items.map(item=>'<tr><td class="name">'+escape(item.product)+'</td><td>'+escape(item.size||'—')+'</td><td>'+item.quantity+'</td></tr>').join(''):'<tr><td colspan="3" class="muted">No stock in this section.</td></tr>';
+      const extraRows=Object.values(extra).sort(compareProductAndSize),completeRows=Object.values(complete).sort(compareProductAndSize);
+      renderRows('extraProductRows',extraRows);renderRows('completeProductRows',completeRows);document.getElementById('extraProductTotal').textContent=extraRows.reduce((sum,item)=>sum+item.quantity,0);
+    }
+    function stockMovementRows(){
+      return boxes.flatMap(box=>box.items.flatMap(item=>(item.luckin_item_usages||[]).map(usage=>({boxCode:box.code,product:item.product_name,size:item.size,quantity:Number(usage.quantity)||0,branch:usage.branch||'',usedAt:usage.used_at||''})))).sort((a,b)=>new Date(b.usedAt)-new Date(a.usedAt));
+    }
+    function renderMovements(){
+      const rows=stockMovementRows();
+      document.getElementById('movementRows').innerHTML=rows.length?rows.map(row=>'<tr><td>'+escape(row.usedAt?new Date(row.usedAt).toLocaleString('en-MY'):'—')+'</td><td class="name">'+escape(row.boxCode)+'</td><td>'+escape(row.product)+'</td><td>'+escape(row.size||'—')+'</td><td>'+row.quantity+'</td><td class="name">'+escape(row.branch||'—')+'</td></tr>').join(''):'<tr><td colspan="6" class="muted">No product usage recorded yet. Use “Use product” in Box Register to record where stock goes.</td></tr>';
+    }
+    function productSummaryRows(){
+      const groups={};
+      boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name+'|'+item.size;if(!groups[key])groups[key]={product:item.product_name,size:item.size,total:0,used:0};groups[key].total+=Number(item.quantity)||0;groups[key].used+=Number(item.usedQty)||0;}));
+      return Object.values(groups).sort(compareProductAndSize);
+    }
+    function renderAll(){renderDashboard();renderBoxes();renderProducts();renderMovements();}
+    let selectedBox;
+    window.useBox=id=>{
+      selectedBox=boxes.find(box=>box.id===id);if(!selectedBox)return;
+      document.getElementById('useBoxCode').textContent='Box code: '+selectedBox.code;
+      document.getElementById('useItems').innerHTML=selectedBox.items.filter(item=>item.availableQty>0).map(item=>'<div class="use-row" data-item-id="'+item.id+'"><label><input class="use-choice" type="checkbox"> <span>'+escape(item.product_name)+(item.size?' · '+escape(item.size):'')+'<br><small>'+item.availableQty+' available</small></span></label><input class="use-quantity" type="number" min="1" max="'+item.availableQty+'" value="1" aria-label="Quantity for '+escape(item.product_name)+'"></div>').join('');
+      document.getElementById('useBranch').value='';
+      document.getElementById('useModal').classList.remove('hidden');
     };
-    addItem();
+    window.closeUseModal=()=>document.getElementById('useModal').classList.add('hidden');
+    let editingBox;
+    const products=['吊挂','侧标','非标','背光字','灯箱','Luckin Coffee立体站式','Photo Frame','字体 1(SILVER)','字体 2(SILVER)','字体 3(SILVER)','字体 4(SILVER)','字体 5(SILVER)','字体 6(SILVER)','字体 7(SILVER)','字体 8(SILVER)','字体 9(SILVER)','PICK UP(SILVER)','NO. MY (SILVER)','字体 1(COOPER)','字体 2(COOPER)','字体 3(COOPER)','字体 4(COOPER)','字体 5(COOPER)','字体 6(COOPER)','字体 7(COOPER)','字体 8(COOPER)','字体 9(COOPER)','PICK UP(COOPER)','NO. MY (COOPER)','蓝底白鹿-正面鹿头','双面火箱古铜色','fabric lightbox','横板背架-非标Luckin Coffee'];
+    const productOptions=selected=>'<option value="">Select product</option>'+products.map(product=>'<option value="'+escape(product)+'"'+(product===selected?' selected':'')+'>'+escape(product)+'</option>').join('')+'<option value="__other__">Other — type a new product</option>';
+    function editItemRow(item={product_name:'',size:'',quantity:1,usedQty:0}){
+      const row=document.createElement('div');row.className='edit-item';row.dataset.itemId=item.id||'';row.dataset.usedQty=item.usedQty||0;
+      const knownProduct=products.includes(item.product_name);
+      row.innerHTML='<div><label>Product name</label><select class="edit-product" required>'+productOptions(knownProduct?item.product_name:'')+'</select><input class="edit-other '+(knownProduct?'hidden':'')+'" placeholder="Type the new product name"></div><div><label>Size</label><input class="edit-size" required></div><div><label>Qty</label><input class="edit-quantity" type="number" min="1" required></div><button type="button" class="edit-remove">Remove</button>';
+      row.querySelector('.edit-product').value=knownProduct?item.product_name:(item.product_name?'__other__':'');row.querySelector('.edit-other').value=knownProduct?'':item.product_name;row.querySelector('.edit-product').onchange=event=>row.querySelector('.edit-other').classList.toggle('hidden',event.target.value!=='__other__');row.querySelector('.edit-size').value=item.size;row.querySelector('.edit-quantity').value=item.quantity;row.querySelector('.edit-quantity').min=Math.max(1,item.usedQty||0);
+      row.querySelector('.edit-remove').onclick=()=>{if(item.id&&item.usedQty>0){alert('This product already has '+item.usedQty+' used. It cannot be removed.');return;}row.remove();};
+      document.getElementById('editItems').appendChild(row);
+    }
+    window.addEditItem=()=>editItemRow();
+    window.editBox=id=>{editingBox=boxes.find(box=>box.id===id);if(!editingBox)return;document.getElementById('editCode').value=editingBox.code;document.getElementById('editBatchTotal').value=editingBox.batchType==='MY'?1:editingBox.batchTotalBoxes;document.getElementById('editBatchTotal').disabled=editingBox.batchType==='MY';document.getElementById('editDate').value=editingBox.receivedDate;document.getElementById('editNotes').value=editingBox.notes||'';document.getElementById('editItems').innerHTML='';editingBox.items.forEach(editItemRow);document.getElementById('editModal').classList.remove('hidden');};
+    window.closeEditModal=()=>document.getElementById('editModal').classList.add('hidden');
+    document.getElementById('editForm').onsubmit=async event=>{
+      event.preventDefault();if(!editingBox)return;const button=document.getElementById('editSubmit');button.disabled=true;button.textContent='Saving...';
+      const items=[...document.querySelectorAll('#editItems .edit-item')].map(row=>({id:row.dataset.itemId?Number(row.dataset.itemId):null,usedQty:Number(row.dataset.usedQty)||0,product_name:row.querySelector('.edit-product').value==='__other__'?row.querySelector('.edit-other').value.trim():row.querySelector('.edit-product').value,size:row.querySelector('.edit-size').value.trim(),quantity:Number(row.querySelector('.edit-quantity').value)}));
+      if(!document.getElementById('editCode').value.trim()||!items.length||items.some(item=>!item.product_name||!item.size||!Number.isInteger(item.quantity)||item.quantity<Math.max(1,item.usedQty))){alert('Keep at least one complete product. Quantity cannot be lower than what was already used.');button.disabled=false;button.textContent='Save changes';return;}
+      const editedCode=document.getElementById('editCode').value.trim(),editedBatch=inferredBatch({code:editedCode}),editedTotal=editedBatch.type==='MY'?1:Number(document.getElementById('editBatchTotal').value);if(!editedCode||!Number.isInteger(editedTotal)||editedTotal<1){alert('Enter a valid box code and total boxes in this batch.');button.disabled=false;button.textContent='Save changes';return;}
+      let result=await database.from('luckin_boxes').update({box_code:editedCode,batch_code:editedBatch.batchCode,batch_type:editedBatch.type,batch_total_boxes:editedTotal,branch:editingBox.branch,received_at:document.getElementById('editDate').value+'T12:00:00',notes:document.getElementById('editNotes').value.trim()}).eq('id',editingBox.id);
+      if(result.error){alert(result.error.message);button.disabled=false;button.textContent='Save changes';return;}
+      const oldItemIds=new Set(editingBox.items.map(item=>item.id)),keptItemIds=new Set(items.filter(item=>item.id).map(item=>item.id));
+      for(const item of items){const data={product_name:item.product_name,size:item.size,quantity:item.quantity};result=item.id?await database.from('luckin_box_items').update(data).eq('id',item.id):await database.from('luckin_box_items').insert({...data,box_id:editingBox.id});if(result.error){alert(result.error.message);button.disabled=false;button.textContent='Save changes';return;}}
+      for(const itemId of oldItemIds){if(!keptItemIds.has(itemId)){result=await database.from('luckin_box_items').delete().eq('id',itemId);if(result.error){alert(result.error.message);button.disabled=false;button.textContent='Save changes';return;}}}
+      closeEditModal();await loadBoxes();button.disabled=false;button.textContent='Save changes';
+    };
+    document.getElementById('useForm').onsubmit=async event=>{
+      event.preventDefault();
+      const branch=document.getElementById('useBranch').value.trim();
+      const selections=[...document.querySelectorAll('#useItems .use-row')].filter(row=>row.querySelector('.use-choice').checked).map(row=>{const item=selectedBox.items.find(entry=>entry.id===Number(row.dataset.itemId));return {item,quantity:Number(row.querySelector('.use-quantity').value)};});
+      if(!selections.length||!branch||selections.some(selection=>!selection.item||!Number.isInteger(selection.quantity)||selection.quantity<1||selection.quantity>selection.item.availableQty)){alert('Tick one or more products, enter a valid quantity for each, and enter the branch name.');return;}
+      const button=document.getElementById('useSubmit');button.disabled=true;button.textContent='Saving...';
+      const {error}=await database.from('luckin_item_usages').insert(selections.map(selection=>({item_id:selection.item.id,quantity:selection.quantity,branch})));
+      if(error){alert(error.message);button.disabled=false;button.textContent='Save product usage';return;}
+      closeUseModal();await loadBoxes();button.disabled=false;button.textContent='Save product usage';
+    };
+    window.deleteBox=async id=>{if(!confirm('Delete this box and all products inside it?'))return;const {error}=await database.from('luckin_boxes').delete().eq('id',id);if(error){alert(error.message);return;}loadBoxes();};
+    function exportCsv(){
+      if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
+      const itemName=item=>item.product_name+(item.size?' '+item.size:'');
+      const branchRows=[],branchBoxEndRows=[];
+      sortedBoxes().forEach(box=>{
+        box.items.forEach((item,index)=>branchRows.push(['',index===0?box.code:'',itemName(item),index===0?(box.branch||''):'']));
+        if(box.items.length)branchBoxEndRows.push(branchRows.length+1);
+      });
+      const balanceGroups={};
+      sortedBoxes().forEach(box=>box.items.filter(item=>item.availableQty>0).forEach(item=>{
+        if(!balanceGroups[item.product_name])balanceGroups[item.product_name]=[];
+        balanceGroups[item.product_name].push({size:item.size||'',quantity:item.availableQty,code:box.code});
+      }));
+      const balanceData=[[],[]],balanceTitleRows=[],balanceHeaderRows=[],balanceItemRows=[];
+      Object.keys(balanceGroups).sort((a,b)=>a.localeCompare(b)).forEach(product=>{
+        balanceTitleRows.push(balanceData.length);balanceData.push(['',product]);
+        balanceHeaderRows.push(balanceData.length);balanceData.push(['','Balance Stock','Quantity','From Code']);
+        balanceGroups[product].sort((first,second)=>String(first.size).localeCompare(String(second.size),undefined,{numeric:true})||first.code.localeCompare(second.code)).forEach(item=>{balanceItemRows.push(balanceData.length);balanceData.push(['',item.size||product,item.quantity+' unit'+(item.quantity===1?'':'s'),item.code]);});
+        balanceData.push([]);
+      });
+      const branchSheet=XLSX.utils.aoa_to_sheet([[],['','CODE','ITEM','INSTALLATION'],...branchRows]);
+      const balanceSheet=XLSX.utils.aoa_to_sheet(balanceData);
+      branchSheet['!cols']=[{wch:4},{wch:14},{wch:38},{wch:28}];
+      balanceSheet['!cols']=[{wch:4},{wch:40},{wch:14},{wch:16}];
+      branchSheet['!rows']=[{hpt:10},{hpt:22}];
+      balanceSheet['!rows']=[{hpt:10},{hpt:10}];
+      const border={top:{style:'thin',color:{rgb:'BFBFBF'}},bottom:{style:'thin',color:{rgb:'BFBFBF'}},left:{style:'thin',color:{rgb:'BFBFBF'}},right:{style:'thin',color:{rgb:'BFBFBF'}}};
+      for(let column=1;column<=3;column++){
+        const cell=branchSheet[XLSX.utils.encode_cell({r:1,c:column})];
+        if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'FFC000'}},alignment:{horizontal:'center',vertical:'center'},border};
+      }
+      for(let row=2;row<2+branchRows.length;row++)for(let column=1;column<=3;column++){
+        const cell=branchSheet[XLSX.utils.encode_cell({r:row,c:column})];
+        if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};
+      }
+      branchBoxEndRows.forEach(row=>{for(let column=1;column<=3;column++){
+        const cell=branchSheet[XLSX.utils.encode_cell({r:row,c:column})];
+        if(cell)cell.s={...cell.s,border:{...border,bottom:{style:'medium',color:{rgb:'404040'}}}};
+      }});
+      balanceTitleRows.forEach(row=>{const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:1})];if(cell)cell.s={font:{bold:true,sz:13,color:{rgb:'000000'}},alignment:{vertical:'center'}};});
+      balanceHeaderRows.forEach(row=>{for(let column=1;column<=3;column++){const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={font:{bold:true,color:{rgb:'000000'}},fill:{fgColor:{rgb:'FFC000'}},alignment:{horizontal:'center',vertical:'center'},border};}});
+      balanceItemRows.forEach(row=>{for(let column=1;column<=3;column++){const cell=balanceSheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={alignment:{vertical:'top',wrapText:true},border};}});
+      branchSheet['!autofilter']={ref:'B2:D'+Math.max(2,branchRows.length+2)};
+      const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,branchSheet,'Branch Stock');XLSX.utils.book_append_sheet(workbook,balanceSheet,'Balance Stock');XLSX.writeFile(workbook,'Luckin Stock Report.xlsx');
+    }
+    window.exportProductSummary=()=>{
+      if(typeof XLSX==='undefined'){alert('Excel export is still loading. Please wait a moment and try again.');return;}
+      const headings=['No','PRODUCT NAME','SIZE','TOTAL QTY','USED QTY','EXTRA QTY'];
+      const rows=productSummaryRows().map((item,index)=>[index+1,item.product,item.size,item.total,item.used,Math.max(0,item.total-item.used)]);
+      const sheet=XLSX.utils.aoa_to_sheet([['LUCKIN PRODUCT SUMMARY'],['Total stock, used stock, and available balance'],headings,...rows]);
+      sheet['!merges']=[XLSX.utils.decode_range('A1:F1'),XLSX.utils.decode_range('A2:F2')];
+      sheet['!cols']=[{wch:7},{wch:36},{wch:18},{wch:14},{wch:13},{wch:16}];
+      sheet['!rows']=[{hpt:28},{hpt:20},{hpt:23}];
+      const border={top:{style:'thin',color:{rgb:'E8C59E'}},bottom:{style:'thin',color:{rgb:'E8C59E'}},left:{style:'thin',color:{rgb:'E8C59E'}},right:{style:'thin',color:{rgb:'E8C59E'}}};
+      for(let column=0;column<headings.length;column++){
+        const title=sheet[XLSX.utils.encode_cell({r:0,c:column})],subtitle=sheet[XLSX.utils.encode_cell({r:1,c:column})],header=sheet[XLSX.utils.encode_cell({r:2,c:column})];
+        if(title)title.s={font:{bold:true,sz:16,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'B84A16'}},alignment:{horizontal:'center',vertical:'center'}};
+        if(subtitle)subtitle.s={font:{italic:true,color:{rgb:'815D4C'}},fill:{fgColor:{rgb:'FFF4EB'}},alignment:{horizontal:'center',vertical:'center'}};
+        if(header)header.s={font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'54200D'}},alignment:{horizontal:'center',vertical:'center',wrapText:true},border};
+      }
+      for(let row=3;row<3+rows.length;row++){for(let column=0;column<headings.length;column++){const cell=sheet[XLSX.utils.encode_cell({r:row,c:column})];if(cell)cell.s={alignment:{vertical:'center',wrapText:true},border,fill:{fgColor:{rgb:row%2?'FFF9F2':'FFFFFF'}}};}}
+      sheet['!autofilter']={ref:'A3:F'+Math.max(3,rows.length+3)};
+      const workbook=XLSX.utils.book_new();XLSX.utils.book_append_sheet(workbook,sheet,'Product Summary');XLSX.writeFile(workbook,'Luckin Product Summary.xlsx');
+    };
+    function showView(view){document.querySelectorAll('main section').forEach(section=>section.classList.add('hidden'));document.getElementById(view+'-view').classList.remove('hidden');document.querySelectorAll('.nav button').forEach(button=>button.classList.toggle('active',button.dataset.view===view));}
+    document.querySelectorAll('.nav button').forEach(button=>button.onclick=()=>showView(button.dataset.view));
+    async function loadBoxes(){const {data,error}=await database.from('luckin_boxes').select('id,box_code,batch_code,batch_type,batch_total_boxes,stock_group,received_at,status,branch,used_at,notes,luckin_box_items(id,product_name,size,quantity,luckin_item_usages(quantity,branch,used_at))').order('box_code');if(error){alert('Cannot load stock: '+error.message);return;}boxes=data.map(row=>{const items=(row.luckin_box_items||[]).map(item=>{const usedQty=(item.luckin_item_usages||[]).reduce((sum,usage)=>sum+Number(usage.quantity||0),0);return {...item,usedQty,availableQty:Math.max(0,Number(item.quantity)-usedQty)};});const total=items.reduce((sum,item)=>sum+Number(item.quantity),0),usedQty=items.reduce((sum,item)=>sum+item.usedQty,0);return {id:row.id,code:row.box_code,batchCode:row.batch_code||'',batchType:row.batch_type||'',batchTotalBoxes:Number(row.batch_total_boxes)||1,stockGroup:row.stock_group||'Auto',receivedAt:new Date(row.received_at).toLocaleString('en-MY'),receivedDate:String(row.received_at||'').slice(0,10),status:usedQty===0?'Available':usedQty>=total?'Used':'Partially used',branch:row.branch||'',usedAt:row.used_at?new Date(row.used_at).toLocaleString('en-MY'):'',notes:row.notes||'',items};});renderAll();}
+    loadBoxes();
+  </script>
+  <script>if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'));</script>
+  <script>
+  document.head.insertAdjacentHTML('beforeend','<style>.metric[data-detail]{cursor:pointer;transition:transform .15s,box-shadow .15s}.metric[data-detail]:hover{transform:translateY(-2px);box-shadow:0 8px 18px #6a2b151c}.detail-modal{position:fixed;inset:0;background:#40160688;display:grid;place-items:center;padding:18px;z-index:50}.detail-box{background:#fffaf4;border-radius:12px;padding:22px;width:min(900px,100%);max-height:calc(100vh - 36px);overflow:auto}.detail-top{display:flex;justify-content:space-between;gap:15px;align-items:center;position:sticky;top:-22px;z-index:2;background:#fffaf4;padding:12px 0}.detail-top h2{margin:0;font-size:20px}.detail-close{border:0;background:#f0d5c4;border-radius:50%;width:32px;height:32px;font-size:20px;cursor:pointer;flex:0 0 auto}.detail-table{margin-top:17px}.detail-table table{width:100%;border-collapse:collapse}.detail-table th,.detail-table td{padding:10px;border-bottom:1px solid #f0d5c4;text-align:left;font-size:13px}.detail-table th{background:#fff0df;color:#6d6259;text-transform:uppercase;font-size:10px;letter-spacing:.6px}</style>');
+    document.body.insertAdjacentHTML('beforeend','<div id="stockDetailModal" class="detail-modal hidden"><div class="detail-box"><div class="detail-top"><h2 id="stockDetailTitle">Stock details</h2><button class="detail-close" onclick="closeStockDetails()">×</button></div><div id="stockDetailContent"></div></div></div>');
+    function detailBatchGroups(){const groups={};boxes.forEach(box=>{const batch=inferredBatch(box),key=batch.type+'|'+batch.batchCode;if(!groups[key])groups[key]={...batch,boxes:[],availableQty:0,usedQty:0};groups[key].boxes.push(box);box.items.forEach(item=>{groups[key].availableQty+=Number(item.availableQty)||0;groups[key].usedQty+=Number(item.usedQty)||0;});});return Object.values(groups).map(group=>({...group,isComplete:group.boxes.length>=group.totalBoxes&&group.usedQty===0&&group.availableQty>0}));}
+    function detailTable(headers,rows){return rows.length?'<div class="detail-table"><table><thead><tr>'+headers.map(header=>'<th>'+header+'</th>').join('')+'</tr></thead><tbody>'+rows.map(row=>'<tr>'+row.map(value=>'<td>'+value+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>':'<p class="muted">No matching stock records.</p>';}
+    window.closeStockDetails=()=>document.getElementById('stockDetailModal').classList.add('hidden');
+    window.showStockDetails=type=>{const groups=detailBatchGroups();let title='',headers=[],rows=[];
+      if(type==='available'){title='Available boxes';headers=['Box code','Batch','Available quantity'];rows=boxes.filter(box=>box.items.some(item=>item.availableQty>0)).map(box=>[escape(box.code),escape(inferredBatch(box).batchCode),box.items.reduce((sum,item)=>sum+Number(item.availableQty||0),0)]);}
+      else if(type==='complete'){title='Complete batches';headers=['Type','Batch code','Boxes','Available quantity'];rows=groups.filter(group=>group.isComplete).map(group=>[escape(group.type),escape(group.batchCode),group.boxes.length+' / '+group.totalBoxes,group.availableQty]);}
+      else if(type==='extra'){title='Extra stock';headers=['Box code','Product','Size','Extra quantity'];rows=groups.filter(group=>group.usedQty>0).flatMap(group=>group.boxes.flatMap(box=>box.items.filter(item=>item.availableQty>0).map(item=>[escape(box.code),escape(item.product_name),escape(item.size||'—'),item.availableQty])));}
+       else if(type==='products'){title='Product types';headers=['Product name','Available quantity'];const products={};boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name;if(!products[key])products[key]={name:item.product_name,quantity:0};products[key].quantity+=Number(item.availableQty)||0;}));rows=Object.values(products).sort((first,second)=>first.name.localeCompare(second.name)).map(item=>[escape(item.name),item.quantity]);}
+      else {const batchType=type.replace('batch-','');title='Complete '+batchType+' batches';headers=['Batch code','Boxes','Available quantity'];rows=groups.filter(group=>group.type===batchType&&group.isComplete).map(group=>[escape(group.batchCode),group.boxes.length+' / '+group.totalBoxes,group.availableQty]);}
+      document.getElementById('stockDetailTitle').textContent=title;document.getElementById('stockDetailContent').innerHTML=detailTable(headers,rows);document.getElementById('stockDetailModal').classList.remove('hidden');
+    };
+    [['available','available'],['completeBatches','complete'],['extraQty','extra'],['productCount','products'],['completeE','batch-E'],['completeS','batch-S'],['completeL','batch-L'],['completeMY','batch-MY']].forEach(([id,type])=>{const metric=document.getElementById(id).closest('.metric');metric.dataset.detail=type;metric.tabIndex=0;metric.onclick=()=>showStockDetails(type);metric.onkeydown=event=>{if(event.key==='Enter'||event.key===' ')showStockDetails(type);};});
+  </script>
+<script>
+  function classifiedBatchGroups(){
+    const groups={};
+    boxes.forEach(box=>{const batch=inferredBatch(box),manual=box.stockGroup||'Auto',key=manual==='Complete'?'Complete|'+box.code:manual==='Extra'?'Extra|'+box.code:batch.type+'|'+batch.batchCode;if(!groups[key])groups[key]={...batch,batchCode:manual==='Auto'?batch.batchCode:box.code,totalBoxes:manual==='Auto'?batch.totalBoxes:1,boxes:[],availableQty:0,usedQty:0,manual};groups[key].boxes.push(box);box.items.forEach(item=>{groups[key].availableQty+=Number(item.availableQty)||0;groups[key].usedQty+=Number(item.usedQty)||0;});});
+    return Object.values(groups).map(group=>({...group,isComplete:group.manual==='Complete'||(group.manual==='Auto'&&group.boxes.length>=group.totalBoxes&&group.usedQty===0&&group.availableQty>0),isExtra:group.manual==='Extra'||(group.manual==='Auto'&&group.usedQty>0)}));
+  }
+  function batchOverview(){const groups=classifiedBatchGroups(),complete={E:0,S:0,L:0,MY:0},extraQty={E:0,S:0,L:0,MY:0,OTHER:0};groups.forEach(group=>{if(group.isComplete&&complete[group.type]!==undefined)complete[group.type]++;if(group.isExtra)extraQty[group.type]=(extraQty[group.type]||0)+group.availableQty;});return {complete,extraQty:Object.values(extraQty).reduce((sum,value)=>sum+value,0)};}
+  function detailBatchGroups(){return classifiedBatchGroups();}
+  renderAll();
+  loadBoxes();
+  window.showStockDetails=type=>{const groups=detailBatchGroups();let title='',headers=[],rows=[];
+    if(type==='available'){title='Available boxes';headers=['Box code','Batch','Available quantity'];rows=boxes.filter(box=>box.items.some(item=>item.availableQty>0)).map(box=>[escape(box.code),escape(inferredBatch(box).batchCode),box.items.reduce((sum,item)=>sum+Number(item.availableQty||0),0)]);}
+    else if(type==='complete'){title='Complete batches';headers=['Type','Batch code','Boxes','Available quantity'];rows=groups.filter(group=>group.isComplete).map(group=>[escape(group.type),'<button class="batch-detail-button" data-batch-code="'+escape(group.batchCode)+'">'+escape(group.batchCode)+'</button>',group.boxes.length+' / '+group.totalBoxes,group.availableQty]);}
+    else if(type==='extra'){title='Extra stock';headers=['Box code','Product','Size','Extra quantity'];const extraItems=groups.filter(group=>group.isExtra).flatMap(group=>group.boxes.flatMap(box=>box.items.filter(item=>item.availableQty>0).map(item=>({boxCode:box.code,product:item.product_name,size:item.size,quantity:item.availableQty})))).sort(compareProductAndSize);rows=extraItems.map(item=>[escape(item.boxCode),escape(item.product),escape(item.size||'&mdash;'),item.quantity]);}
+    else if(type==='products'){title='Product types';headers=['Product name','Available quantity'];const products={};boxes.forEach(box=>box.items.forEach(item=>{const key=item.product_name;if(!products[key])products[key]={name:item.product_name,quantity:0};products[key].quantity+=Number(item.availableQty)||0;}));rows=Object.values(products).sort((first,second)=>first.name.localeCompare(second.name)).map(item=>[escape(item.name),item.quantity]);}
+    else {const batchType=type.replace('batch-','');title='Complete '+batchType+' batches';headers=['Batch code','Boxes','Available quantity'];rows=groups.filter(group=>group.type===batchType&&group.isComplete).map(group=>['<button class="batch-detail-button" data-batch-code="'+escape(group.batchCode)+'">'+escape(group.batchCode)+'</button>',group.boxes.length+' / '+group.totalBoxes,group.availableQty]);}
+    document.getElementById('stockDetailTitle').textContent=title;document.getElementById('stockDetailContent').innerHTML=detailTable(headers,rows);document.querySelectorAll('.batch-detail-button').forEach(button=>button.onclick=()=>showCompleteBatchDetails(button.dataset.batchCode));document.getElementById('stockDetailModal').classList.remove('hidden');
+  };
+</script>
+<script>
+  document.head.insertAdjacentHTML('beforeend','<style>.batch-detail-button{border:0;background:#fff0df;color:#8c3b0c;font:inherit;font-weight:800;padding:6px 9px;border-radius:6px;cursor:pointer}.batch-detail-button:hover{background:#f89521;color:#fff}.detail-back{border:0;background:#1a2f3c;color:#fff;padding:8px 11px;border-radius:7px;font:inherit;font-weight:700;cursor:pointer;margin-top:15px}.box-search-wrap{padding:18px 20px 0;display:flex;align-items:center;gap:12px}.box-search-wrap label{font-size:13px;font-weight:800;color:#1a2f3c}.box-search{width:min(380px,100%);padding:10px 12px;border:1px solid #f0cda9;border-radius:8px;font:inherit;color:#1a2f3c}.box-search:focus{outline:2px solid #f8952166;border-color:#f89521}.product-total-card{margin:0 0 18px;padding:18px 21px;background:#fffaf4;border:1px solid #f0cda9;border-radius:12px;display:flex;align-items:baseline;gap:12px;color:#1a2f3c}.product-total-card span{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}.product-total-card b{font-size:31px}.product-total-card small{color:#6d6259}.product-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.product-panel{min-width:0}@media(max-width:800px){.product-summary-grid{grid-template-columns:1fr}.product-total-card{flex-wrap:wrap}}</style>');
+  window.showCompleteBatchDetails=batchCode=>{const group=detailBatchGroups().find(item=>item.batchCode===batchCode&&item.isComplete);if(!group)return;const rows=group.boxes.flatMap(box=>box.items.map(item=>({boxCode:box.code,product:item.product_name,size:item.size,total:item.quantity,available:item.availableQty,used:item.usedQty}))).sort((first,second)=>String(first.boxCode).localeCompare(String(second.boxCode))||compareProductAndSize(first,second)).map(item=>[escape(item.boxCode),escape(item.product),escape(item.size||'&mdash;'),item.total,item.available,item.used]);document.getElementById('stockDetailTitle').textContent='Complete batch '+group.batchCode+' details';document.getElementById('stockDetailContent').innerHTML=detailTable(['Box code','Product name','Size','Total qty','Available qty','Used qty'],rows)+'<button class="detail-back" id="backToCompleteList">Back to complete batches</button>';document.getElementById('backToCompleteList').onclick=()=>showStockDetails('batch-'+group.type);};
+  const extraMetricLabel=document.querySelector('#extraQty').previousElementSibling;
+  if(extraMetricLabel)extraMetricLabel.textContent='Extra product pieces';
 </script>
 <script>
   let managedProductTypes=[];
-  function addManagedOptionsToReceiveForm(){
-    document.querySelectorAll('select.product').forEach(select=>{
+
+  function addManagedOptions(root=document){
+    root.querySelectorAll('select.edit-product').forEach(select=>{
       select.querySelectorAll('.managed-product-type').forEach(option=>option.remove());
       [...select.options].forEach(option=>{option.hidden=false;option.disabled=false;});
       const other=select.querySelector('option[value="__other__"]');
-      managedProductTypes.filter(item=>item.is_active===false).forEach(item=>{const option=[...select.options].find(current=>current.value===item.name);if(option){option.hidden=true;option.disabled=true;}});
+      managedProductTypes.filter(item=>item.is_active===false).forEach(item=>{
+        const option=[...select.options].find(current=>current.value===item.name);
+        if(option){option.hidden=true;option.disabled=true;}
+      });
       managedProductTypes.filter(item=>item.is_active!==false).forEach(item=>{
         if([...select.options].some(option=>option.value===item.name))return;
-        const option=document.createElement('option');option.value=item.name;option.textContent=item.name;option.className='managed-product-type';select.insertBefore(option,other);
+        const option=document.createElement('option');
+        option.value=item.name;option.textContent=item.name;option.className='managed-product-type';
+        select.insertBefore(option,other);
       });
     });
   }
-  async function loadManagedProductTypesForReceive(){
-    const {data,error}=await database.from('luckin_product_types').select('name,is_active').order('name');
+
+  async function loadManagedProductTypes(){
+    const {data,error}=await database.from('luckin_product_types').select('id,name,is_active').order('name');
     if(error)return;
-    managedProductTypes=data||[];addManagedOptionsToReceiveForm();
+    managedProductTypes=data||[];
+    addManagedOptions();
+    if(!document.getElementById('productTypeModal').classList.contains('hidden'))renderProductTypes();
   }
-  new MutationObserver(addManagedOptionsToReceiveForm).observe(document.getElementById('items'),{childList:true});
-  loadManagedProductTypesForReceive();
+
+  function productTypeModal(){
+    const modal=document.createElement('div');
+    modal.id='productTypeModal';modal.className='modal-wrap hidden';
+    modal.innerHTML='<div class="modal"><div class="modal-top"><h2>Manage product types</h2><button class="close" type="button">×</button></div><p class="muted">These product choices appear in Receive Stock and Edit Box Record on every phone.</p><form id="addProductTypeForm" class="field"><label for="newProductType">New product type</label><div style="display:flex;gap:8px"><input id="newProductType" required placeholder="Type a product name" style="flex:1"><button class="small" type="submit">Add</button></div></form><div id="managedProductTypeRows" class="edit-items"></div><button class="save" id="saveProductTypes" type="button">Save name changes</button></div>';
+    modal.querySelector('.close').onclick=()=>modal.classList.add('hidden');
+    modal.querySelector('#addProductTypeForm').onsubmit=addProductType;
+    modal.querySelector('#saveProductTypes').onclick=saveProductTypeChanges;
+    document.body.appendChild(modal);
+  }
+
+  function renderProductTypes(){
+    const holder=document.getElementById('managedProductTypeRows');
+    holder.innerHTML='';
+    const hiddenNames=new Set(managedProductTypes.filter(item=>item.is_active===false).map(item=>item.name));
+    const names=[...new Set([...products,...managedProductTypes.filter(item=>item.is_active!==false).map(item=>item.name)])].filter(name=>!hiddenNames.has(name)).sort((first,second)=>first.localeCompare(second));
+    if(!names.length){holder.innerHTML='<p class="muted">All product choices are hidden. Add a new product type to restore one.</p>';return;}
+    names.forEach(name=>{
+      const item=managedProductTypes.find(current=>current.name===name);
+      const row=document.createElement('div');row.className='edit-item';row.style.gridTemplateColumns='1fr auto';if(item)row.dataset.id=item.id;
+      const input=document.createElement('input');input.value=name;input.className='managed-product-name';
+      if(!item){input.disabled=true;input.title='Use Rename product to change this original name.';}
+      const remove=document.createElement('button');remove.type='button';remove.className='edit-remove';remove.textContent='Remove';remove.onclick=()=>removeProductType(item?.id,name);
+      row.append(input,remove);holder.appendChild(row);
+    });
+  }
+
+  async function addProductType(event){
+    event.preventDefault();const input=document.getElementById('newProductType'),name=input.value.trim();
+    if(!name)return;
+    const {error}=await database.from('luckin_product_types').insert({name});
+    if(error){alert(error.code==='23505'?'This product type already exists.':error.message);return;}
+    input.value='';await loadManagedProductTypes();
+  }
+
+  async function saveProductTypeChanges(){
+    const rows=[...document.querySelectorAll('#managedProductTypeRows .edit-item')];
+    for(const row of rows){if(!row.dataset.id)continue;const name=row.querySelector('.managed-product-name').value.trim();if(!name){alert('Product type name cannot be empty.');return;}const {error}=await database.from('luckin_product_types').update({name}).eq('id',row.dataset.id);if(error){alert(error.code==='23505'?'Each product type name must be different.':error.message);return;}}
+    await loadManagedProductTypes();alert('Product types updated.');
+  }
+
+  async function removeProductType(id,name){
+    if(!confirm('Remove "'+name+'" from future product choices? Existing stock records will not be deleted.'))return;
+    const result=id?await database.from('luckin_product_types').update({is_active:false}).eq('id',id):await database.from('luckin_product_types').insert({name,is_active:false});
+    const {error}=result;
+    if(error){alert(error.message);return;}await loadManagedProductTypes();
+  }
+
+  window.openProductTypeManager=async()=>{document.getElementById('productTypeModal').classList.remove('hidden');await loadManagedProductTypes();renderProductTypes();};
+  productTypeModal();
+  const productHeader=document.querySelector('#products-view .section-head');
+  if(productHeader){const button=document.createElement('button');button.id='manageProductTypes';button.className='small';button.type='button';button.textContent='Manage product types';button.onclick=openProductTypeManager;productHeader.appendChild(button);}
+  new MutationObserver(()=>addManagedOptions(document.getElementById('editItems'))).observe(document.getElementById('editItems'),{childList:true});
+  loadManagedProductTypes();
+</script>
+<script>
+  document.head.insertAdjacentHTML('beforeend','<style>.rename-product-modal .modal{width:min(560px,100%)}.rename-product-modal select,.rename-product-modal input{width:100%;padding:11px;border:1px solid #f0cda9;border-radius:8px;font:inherit}</style>');
+  function productNameEditorModal(){
+    const modal=document.createElement('div');
+    modal.id='productNameEditorModal';modal.className='modal-wrap hidden rename-product-modal';
+    modal.innerHTML='<div class="modal"><div class="modal-top"><h2>Rename product</h2><button class="close" type="button">×</button></div><p class="muted">This changes the selected product name in every existing box record.</p><form id="renameProductForm"><div class="field"><label for="renameProductFrom">Current product name</label><select id="renameProductFrom" required></select></div><div class="field"><label for="renameProductTo">New product name</label><input id="renameProductTo" required placeholder="Enter the new product name"></div><button class="save" type="submit">Save new name</button></form></div>';
+    modal.querySelector('.close').onclick=()=>modal.classList.add('hidden');
+    modal.querySelector('#renameProductForm').onsubmit=renameExistingProduct;
+    document.body.appendChild(modal);
+  }
+  function fillRenameProductOptions(){
+    const select=document.getElementById('renameProductFrom');if(!select)return;
+    const names=[...new Set([...boxes.flatMap(box=>box.items.map(item=>item.product_name)),...managedProductTypes.map(item=>item.name)])].filter(Boolean).sort((first,second)=>first.localeCompare(second));
+    select.innerHTML=names.length?names.map(name=>'<option></option>').join(''):'<option value="">No products recorded yet</option>';
+    [...select.options].forEach((option,index)=>{if(names[index]){option.value=names[index];option.textContent=names[index];}});
+  }
+  async function renameExistingProduct(event){
+    event.preventDefault();const oldName=document.getElementById('renameProductFrom').value,newName=document.getElementById('renameProductTo').value.trim();
+    if(!oldName||!newName)return;if(oldName===newName){document.getElementById('productNameEditorModal').classList.add('hidden');return;}
+    if(!confirm('Change every "'+oldName+'" record to "'+newName+'"?'))return;
+    const button=event.currentTarget.querySelector('button');button.disabled=true;button.textContent='Saving...';
+    let result=await database.from('luckin_box_items').update({product_name:newName}).eq('product_name',oldName);
+    if(result.error){alert(result.error.message);button.disabled=false;button.textContent='Save new name';return;}
+    const oldManaged=managedProductTypes.find(item=>item.name===oldName),hasNewManaged=managedProductTypes.some(item=>item.name===newName);
+    if(oldManaged){result=hasNewManaged?await database.from('luckin_product_types').delete().eq('id',oldManaged.id):await database.from('luckin_product_types').update({name:newName}).eq('id',oldManaged.id);if(result.error){alert(result.error.message);button.disabled=false;button.textContent='Save new name';return;}}
+    document.getElementById('productNameEditorModal').classList.add('hidden');await loadManagedProductTypes();await loadBoxes();button.disabled=false;button.textContent='Save new name';alert('Product name updated.');
+  }
+  window.openProductNameEditor=async()=>{await loadManagedProductTypes();fillRenameProductOptions();document.getElementById('renameProductTo').value='';document.getElementById('productNameEditorModal').classList.remove('hidden');};
+  productNameEditorModal();
+  const productSummaryHeader=document.querySelector('#products-view .section-head');
+  if(productSummaryHeader){const button=document.createElement('button');button.className='small';button.type='button';button.textContent='Rename product';button.onclick=openProductNameEditor;productSummaryHeader.appendChild(button);}
 </script>
 </body>
 </html>
