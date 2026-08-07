@@ -327,5 +327,37 @@
   new MutationObserver(()=>addManagedOptions(document.getElementById('editItems'))).observe(document.getElementById('editItems'),{childList:true});
   loadManagedProductTypes();
 </script>
+<script>
+  document.head.insertAdjacentHTML('beforeend','<style>.rename-product-modal .modal{width:min(560px,100%)}.rename-product-modal select,.rename-product-modal input{width:100%;padding:11px;border:1px solid #f0cda9;border-radius:8px;font:inherit}</style>');
+  function productNameEditorModal(){
+    const modal=document.createElement('div');
+    modal.id='productNameEditorModal';modal.className='modal-wrap hidden rename-product-modal';
+    modal.innerHTML='<div class="modal"><div class="modal-top"><h2>Rename product</h2><button class="close" type="button">×</button></div><p class="muted">This changes the selected product name in every existing box record.</p><form id="renameProductForm"><div class="field"><label for="renameProductFrom">Current product name</label><select id="renameProductFrom" required></select></div><div class="field"><label for="renameProductTo">New product name</label><input id="renameProductTo" required placeholder="Enter the new product name"></div><button class="save" type="submit">Save new name</button></form></div>';
+    modal.querySelector('.close').onclick=()=>modal.classList.add('hidden');
+    modal.querySelector('#renameProductForm').onsubmit=renameExistingProduct;
+    document.body.appendChild(modal);
+  }
+  function fillRenameProductOptions(){
+    const select=document.getElementById('renameProductFrom');if(!select)return;
+    const names=[...new Set([...boxes.flatMap(box=>box.items.map(item=>item.product_name)),...managedProductTypes.map(item=>item.name)])].filter(Boolean).sort((first,second)=>first.localeCompare(second));
+    select.innerHTML=names.length?names.map(name=>'<option></option>').join(''):'<option value="">No products recorded yet</option>';
+    [...select.options].forEach((option,index)=>{if(names[index]){option.value=names[index];option.textContent=names[index];}});
+  }
+  async function renameExistingProduct(event){
+    event.preventDefault();const oldName=document.getElementById('renameProductFrom').value,newName=document.getElementById('renameProductTo').value.trim();
+    if(!oldName||!newName)return;if(oldName===newName){document.getElementById('productNameEditorModal').classList.add('hidden');return;}
+    if(!confirm('Change every "'+oldName+'" record to "'+newName+'"?'))return;
+    const button=event.currentTarget.querySelector('button');button.disabled=true;button.textContent='Saving...';
+    let result=await database.from('luckin_box_items').update({product_name:newName}).eq('product_name',oldName);
+    if(result.error){alert(result.error.message);button.disabled=false;button.textContent='Save new name';return;}
+    const oldManaged=managedProductTypes.find(item=>item.name===oldName),hasNewManaged=managedProductTypes.some(item=>item.name===newName);
+    if(oldManaged){result=hasNewManaged?await database.from('luckin_product_types').delete().eq('id',oldManaged.id):await database.from('luckin_product_types').update({name:newName}).eq('id',oldManaged.id);if(result.error){alert(result.error.message);button.disabled=false;button.textContent='Save new name';return;}}
+    document.getElementById('productNameEditorModal').classList.add('hidden');await loadManagedProductTypes();await loadBoxes();button.disabled=false;button.textContent='Save new name';alert('Product name updated.');
+  }
+  window.openProductNameEditor=async()=>{await loadManagedProductTypes();fillRenameProductOptions();document.getElementById('renameProductTo').value='';document.getElementById('productNameEditorModal').classList.remove('hidden');};
+  productNameEditorModal();
+  const productSummaryHeader=document.querySelector('#products-view .section-head');
+  if(productSummaryHeader){const button=document.createElement('button');button.className='small';button.type='button';button.textContent='Rename product';button.onclick=openProductNameEditor;productSummaryHeader.appendChild(button);}
+</script>
 </body>
 </html>
