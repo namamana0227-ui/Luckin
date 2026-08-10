@@ -103,6 +103,7 @@
   let managedProductTypes=[];
   function addManagedOptionsToReceiveForm(){
     document.querySelectorAll('select.product').forEach(select=>{
+      const selectedValue=select.value;
       select.querySelectorAll('.managed-product-type').forEach(option=>option.remove());
       [...select.options].forEach(option=>{option.hidden=false;option.disabled=false;});
       const other=select.querySelector('option[value="__other__"]');
@@ -111,6 +112,7 @@
         if([...select.options].some(option=>option.value===item.name))return;
         const option=document.createElement('option');option.value=item.name;option.textContent=item.name;option.className='managed-product-type';select.insertBefore(option,other);
       });
+      if([...select.options].some(option=>option.value===selectedValue&&!option.disabled))select.value=selectedValue;
     });
   }
   async function loadManagedProductTypesForReceive(){
