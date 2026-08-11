@@ -28,6 +28,9 @@
       `;
       page.head.appendChild(style);
     });
+    setInterval(()=>{
+      if(typeof dashboard.contentWindow?.refreshStock==='function')dashboard.contentWindow.refreshStock();
+    },5*60*1000);
   </script>
 </body>
 </html>
