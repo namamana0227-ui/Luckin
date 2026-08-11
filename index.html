@@ -233,7 +233,7 @@
   function classifiedBatchGroups(){
     const groups={};
     boxes.forEach(box=>{const batch=inferredBatch(box),manual=box.stockGroup||'Auto',key=manual==='Complete'?'Complete|'+box.code:manual==='Extra'?'Extra|'+box.code:batch.type+'|'+batch.batchCode;if(!groups[key])groups[key]={...batch,batchCode:manual==='Auto'?batch.batchCode:box.code,totalBoxes:manual==='Auto'?batch.totalBoxes:1,boxes:[],availableQty:0,usedQty:0,manual};groups[key].boxes.push(box);box.items.forEach(item=>{groups[key].availableQty+=Number(item.availableQty)||0;groups[key].usedQty+=Number(item.usedQty)||0;});});
-    return Object.values(groups).map(group=>({...group,isComplete:group.manual==='Complete'||(group.manual==='Auto'&&group.boxes.length>=group.totalBoxes&&group.usedQty===0&&group.availableQty>0),isExtra:group.manual==='Extra'||(group.manual==='Auto'&&group.usedQty>0)}));
+    return Object.values(groups).map(group=>({...group,isComplete:group.manual==='Complete'||(group.manual==='Auto'&&group.boxes.length>=group.totalBoxes&&group.usedQty===0&&group.availableQty>0),isExtra:group.manual==='Extra'}));
   }
   function batchOverview(){const groups=classifiedBatchGroups(),complete={E:0,S:0,L:0,MY:0},extraQty={E:0,S:0,L:0,MY:0,OTHER:0};groups.forEach(group=>{if(group.isComplete&&complete[group.type]!==undefined)complete[group.type]++;if(group.isExtra)extraQty[group.type]=(extraQty[group.type]||0)+group.availableQty;});return {complete,extraQty:Object.values(extraQty).reduce((sum,value)=>sum+value,0)};}
   function detailBatchGroups(){return classifiedBatchGroups();}
