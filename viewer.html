@@ -7,12 +7,21 @@
   <style>
     html,body{margin:0;width:100%;min-height:100%;background:#ffffff}
     #dashboard{display:block;border:0;width:100%;height:100vh;min-height:720px}
+    #refreshCountdown{position:fixed;right:18px;bottom:18px;z-index:10;background:#1a2f3c;color:#fff;padding:10px 14px;border-radius:999px;font:700 13px Arial,sans-serif;box-shadow:0 5px 16px #1a2f3c44}
   </style>
 </head>
 <body>
   <iframe id="dashboard" title="Luckin Stock Viewer" src="index.html"></iframe>
+  <div id="refreshCountdown">Auto refresh in 5:00</div>
   <script>
     const dashboard=document.getElementById('dashboard');
+    const countdown=document.getElementById('refreshCountdown');
+    let secondsLeft=5*60;
+    function updateCountdown(){
+      const minutes=Math.floor(secondsLeft/60),seconds=String(secondsLeft%60).padStart(2,'0');
+      countdown.textContent='Auto refresh in '+minutes+':'+seconds;
+    }
+    function resetCountdown(){secondsLeft=5*60;updateCountdown();}
     dashboard.addEventListener('load',()=>{
       const page=dashboard.contentDocument;
       if(!page)return;
@@ -27,10 +36,16 @@
         #boxes-view td:last-child{display:none!important}
       `;
       page.head.appendChild(style);
+      page.getElementById('refreshStock')?.addEventListener('click',resetCountdown);
     });
+    updateCountdown();
     setInterval(()=>{
-      if(typeof dashboard.contentWindow?.refreshStock==='function')dashboard.contentWindow.refreshStock();
-    },5*60*1000);
+      secondsLeft--;
+      if(secondsLeft<=0){
+        if(typeof dashboard.contentWindow?.refreshStock==='function')dashboard.contentWindow.refreshStock();
+        resetCountdown();
+      }else updateCountdown();
+    },1000);
   </script>
 </body>
 </html>
