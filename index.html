@@ -140,6 +140,16 @@
       const button=document.getElementById('useSubmit');button.disabled=true;button.textContent='Saving...';
       const {error}=await database.from('luckin_item_usages').insert(selections.map(selection=>({item_id:selection.item.id,quantity:selection.quantity,branch})));
       if(error){alert(error.message);button.disabled=false;button.textContent='Save product usage';return;}
+      const usedBatch=inferredBatch(selectedBox);
+      await loadBoxes();
+      const remainingBoxIds=boxes.filter(box=>{
+        const batch=inferredBatch(box);
+        return batch.type===usedBatch.type&&batch.batchCode===usedBatch.batchCode&&box.items.some(item=>Number(item.availableQty)>0);
+      }).map(box=>box.id);
+      if(remainingBoxIds.length){
+        const {error:stockGroupError}=await database.from('luckin_boxes').update({stock_group:'Extra'}).in('id',remainingBoxIds);
+        if(stockGroupError){alert('Product usage was saved, but the remaining boxes could not be changed to Extra stock: '+stockGroupError.message);button.disabled=false;button.textContent='Save product usage';return;}
+      }
       closeUseModal();await loadBoxes();button.disabled=false;button.textContent='Save product usage';
     };
     window.deleteBox=async id=>{if(!confirm('Delete this box and all products inside it?'))return;const {error}=await database.from('luckin_boxes').delete().eq('id',id);if(error){alert(error.message);return;}loadBoxes();};
